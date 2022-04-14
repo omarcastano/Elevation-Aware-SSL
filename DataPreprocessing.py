@@ -49,7 +49,7 @@ def create_shapefiel_from_polygons(chip_metadata:dict, chip_name:str, path_to_sa
     gdf.crs = 'epsg:4326'
 
     if crs != 'epsg:4326':
-        gdf.to_crs('epsg:3116', inplace=True)
+        gdf.to_crs(crs, inplace=True)
 
     if path_to_save:
         gdf.to_file(path_to_save)
