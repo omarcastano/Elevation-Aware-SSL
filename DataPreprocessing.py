@@ -54,3 +54,38 @@ def create_shapefiel_from_polygons(chip_metadata:dict, chip_name:str, path_to_sa
     if path_to_save:
         gdf.to_file(path_to_save)
     return gdf
+
+
+def polygons_intersection(path_shapefiel1, path_shapefile2, path_to_save=None , crs=None):
+
+    """
+    Functon that conputes the intesection between polygons stored in shapefiles.
+
+    path_shapwfiel1: string
+        path to the folder where a shapefile is stored
+    path_shapwfiel2: string
+        path to the folder where a shapefile is stored
+    path_to_save: string, optional (default=None)
+        path to the folder where the shapefile which contains the 
+        intersection will be stored
+    crs: string, optional (default=None)
+        Projection for the output shapefile. If None the output projection
+        will be the same of input shapefiles.
+    """
+    shapefile1 = gpd.read_file(path_shapefiel1)
+    shapefile2 = gpd.read_file(path_shapefile2)
+
+    data = []
+    for indx1, info1 in shapefile1.iterrows():
+        for indx2, info2 in shapefile2.iterrows():
+            inter = info2['geometry'].intersection(info1['geometry'])
+            data.append(inter)
+
+    intersection = gpd.GeoDataFrame(data, columns=['geometry'], crs = shapefile1.crs)
+    intersection = gpd.GeoDataFrame(intersection.dissolve(), columns=['geometry'], crs = shapefile1.crs)
+
+    if (crs != shapefile1.crs) & (crs != None):
+        intersection.to_crs(crs, inplace=True)
+
+    intersection.to_file(path_to_save)
+    return intersection
