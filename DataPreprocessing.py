@@ -18,7 +18,7 @@ def create_shapefiel_from_polygons(chip_metadata:dict, chip_name:str, path_to_sa
     Args:
         chip_metadata: dict
             dictionary which contains corners coordintaes in
-            a epsg:4326 projection. Example
+            epsg:4326 projection. Example
                             {'center_latlon': array([  6.77726963, -76.968011  ]),
                             'chip_id': '(0, 200)',
                             'chip_size': 100,
