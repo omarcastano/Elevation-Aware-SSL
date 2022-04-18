@@ -49,15 +49,16 @@ def create_shapefiel_from_polygons(path_to_chip_metadata:str, chip_name:str, pat
     return gdf
 
 
-def polygons_intersection(path_shapefiel1, path_shapefile2, path_to_save=None , crs=None):
+def polygons_intersection(shapefile1, shapefile2, path_to_save=None , crs=None):
 
     """
     Functon that conputes the intesection between polygons stored in shapefiles.
-
-    path_shapwfiel1: string
-        path to the folder where a shapefile is stored
-    path_shapwfiel2: string
-        path to the folder where a shapefile is stored
+    shapefile1: string or geo pandas dataframe
+        either the path to the folder where a shapefile is stored or
+        a geopandas dataframe with the polygons
+    shapefile2: string or geo pandas dataframe
+        either the path to the folder where a shapefile is stored or
+        a geopandas dataframe with the polygons
     path_to_save: string, optional (default=None)
         path to the folder where the shapefile which contains the 
         intersection will be stored
@@ -65,8 +66,12 @@ def polygons_intersection(path_shapefiel1, path_shapefile2, path_to_save=None , 
         Projection for the output shapefile. If None the output projection
         will be the same of input shapefiles.
     """
-    shapefile1 = gpd.read_file(path_shapefiel1)
-    shapefile2 = gpd.read_file(path_shapefile2)
+
+    if type(shapefile1) == str:
+        shapefile1 = gpd.read_file(shapefile1)
+
+    if type(shapefile2) == str:
+        shapefile2 = gpd.read_file(shapefile2)
 
     data = []
     for indx1, info1 in shapefile1.iterrows():
@@ -80,10 +85,13 @@ def polygons_intersection(path_shapefiel1, path_shapefile2, path_to_save=None , 
     if (crs != shapefile1.crs) & (crs != None):
         intersection.to_crs(crs, inplace=True)
 
-    intersection.to_file(path_to_save)
+    if path_to_save:
+        intersection.to_file(path_to_save)
+
     return intersection
 
-def from_array_to_geotiff(path_to_save, array, chip_metadata, crs=3116):
+
+def from_array_to_geotiff(path_to_save, array, path_to_chip_metadata, crs=3116):
 
     """
     Function that creates a GeoTiff from a numpy array and chip corners cordinates
@@ -93,22 +101,14 @@ def from_array_to_geotiff(path_to_save, array, chip_metadata, crs=3116):
             path to the folder where the GeoTiff will be saved.
         array: ndarray
             Image with dimension (C, H, W)
-        chip_metadata: dict
-            dictionary which contains corners coordintaes in
-            epsg:4326 projection. Example
-                            {'center_latlon': array([  6.77726963, -76.968011  ]),
-                            'chip_id': '(0, 200)',
-                            'chip_size': 100,
-                            'corners': {'nw': array([  6.78180805, -76.97255079]),
-                            'se': array([  6.77273122, -76.9634712 ])},
-                            'grid_size': 10,
-                            'patch_id': '18NTN_8_5',
-                            'patch_size': 1000}
+        path_to_chip_metadata: string
+            path to the chip metadata file which muste 
+            be in pickle format. 
         crs: integer (default=3116)
             EPSG projection for the output GeoTiff
-
-    
     """
+    chip_metadata = pd.read_pickle(path_to_chip_metadata)
+    
     driver = gdal.GetDriverByName('GTiff')
     no_bands, heigth, width = array.shape
     DataSet = driver.Create(path_to_save, width, heigth, no_bands, gdal.GDT_Float64)
