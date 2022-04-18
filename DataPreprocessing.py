@@ -10,23 +10,15 @@ import folium
 from osgeo import osr, gdal, ogr
 
 
-def create_shapefiel_from_polygons(chip_metadata:dict, chip_name:str, path_to_save:str=None, crs:str='epsg:4326'):
+def create_shapefiel_from_polygons(path_to_chip_metadata:str, chip_name:str, path_to_save:str=None, crs:str='epsg:4326'):
 
     """
     Function that allow you to create a shapefile from chip corners cordinates.
 
     Args:
-        chip_metadata: dict
-            dictionary which contains corners coordintaes in
-            epsg:4326 projection. Example
-                            {'center_latlon': array([  6.77726963, -76.968011  ]),
-                            'chip_id': '(0, 200)',
-                            'chip_size': 100,
-                            'corners': {'nw': array([  6.78180805, -76.97255079]),
-                            'se': array([  6.77273122, -76.9634712 ])},
-                            'grid_size': 10,
-                            'patch_id': '18NTN_8_5',
-                            'patch_size': 1000}
+        path_to_chip_metadata: string
+            path to the chip metadata file which muste 
+            be in pickle format. 
         chip_name: string
             names associated with the chip
         path_to_save: string, optional (default=None)
@@ -34,6 +26,7 @@ def create_shapefiel_from_polygons(chip_metadata:dict, chip_name:str, path_to_sa
         crs: string, optional (default='epsg:4326')
             projection for the output shapefile
     """
+    chip_metadata = pd.read_pickle(path_to_chip_metadata + '/metadata.pkl')
 
     #Defien coordinates
     nw = chip_metadata['corners']['nw'][::-1]
