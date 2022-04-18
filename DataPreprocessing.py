@@ -26,7 +26,7 @@ def create_shapefiel_from_polygons(path_to_chip_metadata:str, chip_name:str, pat
         crs: string, optional (default='epsg:4326')
             projection for the output shapefile
     """
-    chip_metadata = pd.read_pickle(path_to_chip_metadata + '/metadata.pkl')
+    chip_metadata = pd.read_pickle(path_to_chip_metadata)
 
     #Defien coordinates
     nw = chip_metadata['corners']['nw'][::-1]
