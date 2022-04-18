@@ -13,7 +13,7 @@ from osgeo import osr, gdal, ogr
 def create_shapefiel_from_polygons(chip_metadata:dict, chip_name:str, path_to_save:str=None, crs:str='epsg:4326'):
 
     """
-    Function that allow you to create a shapefile from polygons
+    Function that allow you to create a shapefile from chip corners cordinates.
 
     Args:
         chip_metadata: dict
@@ -32,7 +32,7 @@ def create_shapefiel_from_polygons(chip_metadata:dict, chip_name:str, path_to_sa
         path_to_save: string, optional (default=None)
              path to save the shapefile.
         crs: string, optional (default='epsg:4326')
-            projection for the output shapefi;e
+            projection for the output shapefile
     """
 
     #Defien coordinates
@@ -89,3 +89,59 @@ def polygons_intersection(path_shapefiel1, path_shapefile2, path_to_save=None , 
 
     intersection.to_file(path_to_save)
     return intersection
+
+def from_array_to_geotiff(path_to_save, array, chip_metadata, crs=3116):
+
+    """
+    Function that creates a GeoTiff from a numpy array and chip corners cordinates
+
+    Arguments:
+        path_to_save: string, optional (default=None)
+            path to the folder where the GeoTiff will be saved.
+        array: ndarray
+            Image with dimension (C, H, W)
+        chip_metadata: dict
+            dictionary which contains corners coordintaes in
+            epsg:4326 projection. Example
+                            {'center_latlon': array([  6.77726963, -76.968011  ]),
+                            'chip_id': '(0, 200)',
+                            'chip_size': 100,
+                            'corners': {'nw': array([  6.78180805, -76.97255079]),
+                            'se': array([  6.77273122, -76.9634712 ])},
+                            'grid_size': 10,
+                            'patch_id': '18NTN_8_5',
+                            'patch_size': 1000}
+        crs: integer (default=3116)
+            EPSG projection for the output GeoTiff
+
+    
+    """
+    driver = gdal.GetDriverByName('GTiff')
+    no_bands, heigth, width = array.shape
+    DataSet = driver.Create(path_to_save, width, heigth, no_bands, gdal.GDT_Float64)
+
+    nw = chip_metadata['corners']['nw']
+    se = chip_metadata['corners']['se']
+
+
+    InSR = osr.SpatialReference()
+    InSR.ImportFromEPSG(4326)       # 4326/Geographic
+    OutSR = osr.SpatialReference()
+    OutSR.ImportFromEPSG(crs)     # Colombia Bogota zone
+
+    Point = ogr.Geometry(ogr.wkbPoint)
+    Point.AddPoint(nw[1], nw[0]) # use your coordinates here
+    Point.AssignSpatialReference(InSR)    # tell the point what coordinates it's in
+    Point.TransformTo(OutSR)              # project it to the out spatial reference
+
+
+    DataSet.SetGeoTransform((Point.GetX(), 10, 0, Point.GetY(), 0, -10))
+
+
+    srs = osr.SpatialReference()
+    srs.ImportFromEPSG(crs)
+    DataSet.SetProjection(srs.ExportToWkt())
+
+
+    for i, image in enumerate(array, 1):
+        DataSet.GetRasterBand(i).WriteArray(image/np.max(image))
