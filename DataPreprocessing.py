@@ -78,10 +78,10 @@ def polygons_intersection(shapefile1, shapefile2, path_to_save=None , crs=None):
     for indx1, info1 in shapefile1.iterrows():
         for indx2, info2 in shapefile2.iterrows():
             inter = info2['geometry'].intersection(info1['geometry'])
-            data.append(inter)
+            data.append([inter])
 
-    intersection = gpd.GeoDataFrame(unary_union(data), columns=['geometry'], crs = shapefile1.crs)
-    #intersection = gpd.GeoDataFrame(intersection.dissolve(), columns=['geometry'], crs = shapefile1.crs)
+    intersection = gpd.GeoDataFrame(data, columns=['geometry'], crs = shapefile1.crs)
+    intersection = gpd.GeoDataFrame(intersection.dissolve(), columns=['geometry'], crs = shapefile1.crs)
 
     if (crs != shapefile1.crs) & (crs != None):
         intersection.to_crs(crs, inplace=True)
