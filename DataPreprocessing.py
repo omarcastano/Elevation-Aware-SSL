@@ -8,6 +8,7 @@ import numpy as np
 from shapely.geometry import Point, Polygon
 import folium
 from osgeo import osr, gdal, ogr
+from shapely.ops import unary_union
 
 
 def create_shapefiel_from_polygons(path_to_chip_metadata:str, chip_name:str, path_to_save:str=None, crs:str='epsg:4326'):
@@ -79,8 +80,8 @@ def polygons_intersection(shapefile1, shapefile2, path_to_save=None , crs=None):
             inter = info2['geometry'].intersection(info1['geometry'])
             data.append(inter)
 
-    intersection = gpd.GeoDataFrame(data, columns=['geometry'], crs = shapefile1.crs)
-    intersection = gpd.GeoDataFrame(intersection.dissolve(), columns=['geometry'], crs = shapefile1.crs)
+    intersection = gpd.GeoDataFrame(unary_union(data), columns=['geometry'], crs = shapefile1.crs)
+    #intersection = gpd.GeoDataFrame(intersection.dissolve(), columns=['geometry'], crs = shapefile1.crs)
 
     if (crs != shapefile1.crs) & (crs != None):
         intersection.to_crs(crs, inplace=True)
