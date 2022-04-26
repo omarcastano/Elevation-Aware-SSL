@@ -168,7 +168,7 @@ def from_array_to_geotiff(path_to_save, array, path_to_chip_metadata, crs=3116):
 
         
         
-def shapefiel_to_geotiff(path_input_shp, path_output_raster, pixel_size, attribute, x_res=100, y_res=100, no_data_value=-999):
+def shapefiel_to_geotiff(path_input_shp, path_output_raster, pixel_size, attribute, no_data_value=-999):
 
 
     """
@@ -196,8 +196,8 @@ def shapefiel_to_geotiff(path_input_shp, path_output_raster, pixel_size, attribu
 
 
     #calculate the resolution distance to pixel value:
-    #x_res = int((x_max - x_min) / pixel_size)
-    #y_res = int((y_max - y_min) / pixel_size)
+    x_res = int((x_max - x_min) / pixel_size)
+    y_res = int((y_max - y_min) / pixel_size)
 
     #image type
     image_type = 'GTiff'
@@ -222,7 +222,7 @@ def shapefiel_to_geotiff(path_input_shp, path_output_raster, pixel_size, attribu
     raster_band = new_raster.GetRasterBand(1)
 
     # assign the no data value to empty cells
-    raster_band.SetNoDataValue(no_data_value)
+    #raster_band.SetNoDataValue(no_data_value)
 
     # run vector to raster on new raster with input Shapefile
     gdal.RasterizeLayer(new_raster, [1], shp_layer, options = [f"ATTRIBUTE={attribute}"])
