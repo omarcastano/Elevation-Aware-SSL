@@ -168,8 +168,7 @@ def from_array_to_geotiff(path_to_save, array, path_to_chip_metadata, crs=3116):
 
         
         
-        
- def shapefiel_to_geotiff(path_input_shp, path_output_raster, pixel_size, attribute, no_data_value=-999):
+def shapefiel_to_geotiff(path_input_shp, path_output_raster, pixel_size, attribute, no_data_value=-999):
 
 
     """
