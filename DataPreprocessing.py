@@ -222,7 +222,7 @@ def shapefiel_to_geotiff(path_input_shp, path_output_raster, pixel_size, attribu
     raster_band = new_raster.GetRasterBand(1)
 
     # assign the no data value to empty cells
-    #raster_band.SetNoDataValue(no_data_value)
+    raster_band.SetNoDataValue(no_data_value)
 
     # run vector to raster on new raster with input Shapefile
     gdal.RasterizeLayer(new_raster, [1], shp_layer, options = [f"ATTRIBUTE={attribute}"])
