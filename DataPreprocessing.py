@@ -232,3 +232,60 @@ def shapefiel_to_geotiff(path_input_shp, path_output_raster, pixel_size, attribu
 
     # run vector to raster on new raster with input Shapefile
     gdal.RasterizeLayer(new_raster, [1], shp_layer, options = [f"ATTRIBUTE={attribute}"])
+
+    
+def crop_geotiff_chip(path_to_chip_metadata, path_to_geotiff, new_shape=(100,100), crs=3116):
+
+    """
+    Function center crops a geotiff image geotiff and then save the cropped geotiff using 
+    coordinates stored in chip metadata.
+    
+    Arguments:
+        path_to_chip_metadata: string
+            Path to chip metadata
+        path_to_geotiff: string
+            path to geotiff image
+        new_shape: tuple
+            target shape of the new image 
+        crs: int
+            EPSG projection for the output GeoTiff
+    """
+
+    chip_metadata = pd.read_pickle(path_to_chip_metadata)
+
+    nw = chip_metadata['corners']['nw']
+    se = chip_metadata['corners']['se']
+
+
+    InSR = osr.SpatialReference()
+    InSR.ImportFromEPSG(4326)       # 4326/Geographic
+    OutSR = osr.SpatialReference()
+    OutSR.ImportFromEPSG(crs)     # Colombia Bogota zone
+
+    Point = ogr.Geometry(ogr.wkbPoint)
+    Point.AddPoint(nw[1], nw[0])  # use your coordinates here
+    Point.AssignSpatialReference(InSR)    # tell the point what coordinates it's in
+    Point.TransformTo(OutSR)              # project it to the out spatial reference
+
+
+    ds = gdal.Open(path_to_geotiff)
+    band = ds.GetRasterBand(1)
+    arr = band.ReadAsArray()
+
+    nw, nh = ((arr.shape - np.array(new_shape))/2).astype(int)
+
+    arr_out = arr[nw:-nw:,nh:-nh:]
+    driver = gdal.GetDriverByName("GTiff")
+    outdata = driver.Create(path_to_geotiff, new_shape[1], new_shape[0], 1, gdal.GDT_Int16)
+
+    geotf = list(ds.GetGeoTransform())
+    geotf[0] = Point.GetX()
+    geotf[3] = Point.GetY()
+
+    outdata.SetGeoTransform(tuple(geotf))##sets same geotransform as input
+    outdata.SetProjection(ds.GetProjection())##sets same projection as input
+    outdata.GetRasterBand(1).SetNoDataValue(-9999)##if you want these values transparent
+    outdata.GetRasterBand(1).WriteArray(arr_out)
+    outdata.FlushCache()    
+ 
+
