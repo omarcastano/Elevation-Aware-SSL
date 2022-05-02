@@ -35,10 +35,10 @@ def create_shapefiel_from_polygons(path_to_chip_metadata:str, chip_name:str, pat
     ne = np.array([nw[0],  se[1]])
     sw = np.array([se[0],  nw[1]])
     
-    nw = nw + np.sign(nw)*0.1
-    se = se + np.sign(se)*0.1
-    ne = ne + np.sign(ne)*0.1
-    sw = sw + np.sign(sw)*0.1
+    nw = nw + np.sign(nw)*0.001
+    se = se + np.sign(se)*0.001
+    ne = ne + np.sign(ne)*0.001
+    sw = sw + np.sign(sw)*0.001
 
     coordinates = [sw, nw, ne, se]
 
@@ -102,7 +102,7 @@ def polygons_intersection(shapefile1, shapefile2, chip_name=None, group_by='elem
         sipra_mask = shapefile1.loc[shapefile1[group_by] == label, :]
         for indx1, info1 in sipra_mask.iterrows():
             for indx2, info2 in shapefile2.iterrows():
-                inter = info2['geometry'].intersection(info1['geometry'], align=False)
+                inter = info2['geometry'].intersection(info1['geometry'])
                 data.append([inter])
 
 
