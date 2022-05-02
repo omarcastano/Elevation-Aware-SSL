@@ -11,11 +11,10 @@ from osgeo import osr, gdal, ogr
 from shapely.ops import unary_union
 
 
-def create_shapefiel_from_polygons(path_to_chip_metadata:str, chip_name:str, path_to_save:str=None, crs:str='epsg:4326'):
+def create_shapefiel_from_polygons(path_to_chip_metadata:str, chip_name:str, chip_padding:float=None, path_to_save:str=None, crs:str='epsg:4326'):
 
     """
     Function that allow you to create a shapefile from chip corners cordinates.
-
     Args:
         path_to_chip_metadata: string
             path to the chip metadata file which muste 
@@ -35,10 +34,11 @@ def create_shapefiel_from_polygons(path_to_chip_metadata:str, chip_name:str, pat
     ne = np.array([nw[0],  se[1]])
     sw = np.array([se[0],  nw[1]])
     
-    nw = nw + np.sign(nw)*0.001
-    se = se + np.sign(se)*0.001
-    ne = ne + np.sign(ne)*0.001
-    sw = sw + np.sign(sw)*0.001
+    if chip_padding:
+        nw = nw + np.sign(nw)*chip_padding
+        se = se - np.sign(se)*chip_padding
+        ne = ne + np.array([-1,-1])*chip_padding
+        sw = sw + np.array([1,1])*chip_padding
 
     coordinates = [sw, nw, ne, se]
 
