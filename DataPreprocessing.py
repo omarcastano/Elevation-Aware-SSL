@@ -35,10 +35,7 @@ def create_shapefiel_from_polygons(path_to_chip_metadata:str, chip_name:str, pat
     ne = np.array([nw[0],  se[1]])
     sw = np.array([se[0],  nw[1]])
     
-    nw = nw + np.sign(nw)*0.1
-    se = se + np.sign(se)*0.1
-    ne = ne + np.sign(ne)*0.1
-    sw = sw + np.sign(sw)*0.1
+
     coordinates = [sw, nw, ne, se]
 
     polygon = Polygon(coordinates)
