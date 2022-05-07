@@ -103,6 +103,7 @@ def polygons_intersection(shapefile1, shapefile2, chip_name=None, group_by='elem
         for indx1, info1 in sipra_mask.iterrows():
             for indx2, info2 in shapefile2.iterrows():
                 inter = info2['geometry'].intersection(info1['geometry'])
+                print(inter)
                 data.append([inter])
 
 
