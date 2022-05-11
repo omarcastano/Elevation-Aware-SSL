@@ -89,31 +89,28 @@ def polygons_intersection(shapefile1, shapefile2, chip_name=None, group_by='elem
 
     unique_labels = shapefile1[group_by].unique()
     unique_labels.sort()
-    
-    label_num = np.arange(len(unique_labels))
 
+    label_num = np.arange(len(unique_labels))
 
     chip_references=[]
     geometry = []
     labels = []
     for label in unique_labels:
-        data = []
         chip_references.append(chip_name)
         sipra_mask = shapefile1.loc[shapefile1[group_by] == label, :]
-        for indx1, info1 in sipra_mask.iterrows():
-            for indx2, info2 in shapefile2.iterrows():
-                inter = info2['geometry'].intersection(info1['geometry'])
-                print(inter)
-                data.append([inter])
+        
+        inter = shapefile2.sample(sipra_mask.shape[0], replace=True).intersection(sipra_mask, align=False)
+        inter = inter[~inter.is_empty]
 
-
-        intersection = gpd.GeoDataFrame(data, columns=['geometry'], crs = shapefile1.crs)
-        intersection = gpd.GeoDataFrame(intersection.dissolve(), columns=['geometry'], crs = shapefile1.crs)
+        if inter.shape[0] != 0:
+            intersection = gpd.GeoDataFrame(inter, columns=['geometry'], crs = shapefile1.crs)
+            intersection = gpd.GeoDataFrame(intersection.dissolve(), columns=['geometry'], crs = shapefile1.crs)
+            geometry.append(intersection.geometry.values[0])
+        else:
+            geometry.append(Polygon())
 
         labels.append(label)
-        geometry.append(intersection.geometry.values[0])
 
-    
     intersection = gpd.GeoDataFrame({"chip_name":chip_references,"labels":labels,"labels_num":label_num ,"geometry":geometry}, crs = shapefile1.crs)
 
     if (crs != shapefile1.crs) & (crs != None):
