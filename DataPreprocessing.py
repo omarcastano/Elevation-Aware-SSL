@@ -230,6 +230,8 @@ def shapefiel_to_geotiff(path_input_shp, path_output_raster, pixel_size, attribu
 
     # run vector to raster on new raster with input Shapefile
     gdal.RasterizeLayer(new_raster, [1], shp_layer, options = [f"ATTRIBUTE={attribute}"])
+    
+    new_raster.FlushCache() 
 
     
 def crop_geotiff_chip(path_to_chip_metadata, path_to_geotiff, new_shape=(100,100), crs=3116):
