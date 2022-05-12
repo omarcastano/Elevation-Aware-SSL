@@ -234,7 +234,7 @@ def shapefiel_to_geotiff(path_input_shp, path_output_raster, pixel_size, attribu
     new_raster.FlushCache() 
 
     
-def crop_geotiff_chip(path_to_chip_metadata, path_to_geotiff, new_shape=(100,100), crs=3116):
+def crop_geotiff_chip(path_to_chip_metadata, path_to_geotiff, path_to_save_cropped_geotiff, new_shape=(100,100), crs=3116):
 
     """
     Function center crops a geotiff image geotiff and then save the cropped geotiff using 
@@ -276,7 +276,7 @@ def crop_geotiff_chip(path_to_chip_metadata, path_to_geotiff, new_shape=(100,100
 
     arr_out = arr[nw:-nw:,nh:-nh:]
     driver = gdal.GetDriverByName("GTiff")
-    outdata = driver.Create(path_to_geotiff, new_shape[1], new_shape[0], 1, gdal.GDT_Int16)
+    outdata = driver.Create(path_to_save_cropped_geotiff, new_shape[1], new_shape[0], 1, gdal.GDT_Int16)
 
     geotf = list(ds.GetGeoTransform())
     geotf[0] = Point.GetX()
