@@ -234,7 +234,7 @@ def shapefiel_to_geotiff(path_input_shp, path_output_raster, pixel_size, attribu
     new_raster.FlushCache() 
 
     
-def crop_geotiff_chip(path_to_chip_metadata, path_to_geotiff, path_to_save_cropped_geotiff, new_shape=(100,100), crs=3116):
+def crop_geotiff_chip(path_to_chip_metadata, path_to_geotiff, path_to_save_cropped_geotiff, new_shape=(100,100), crs=3116, no_data_value=-999):
 
     """
     Function center crops a geotiff image geotiff and then save the cropped geotiff using 
@@ -288,7 +288,7 @@ def crop_geotiff_chip(path_to_chip_metadata, path_to_geotiff, path_to_save_cropp
 
     outdata.SetGeoTransform(tuple(geotf))##sets same geotransform as input
     outdata.SetProjection(ds.GetProjection())##sets same projection as input
-    outdata.GetRasterBand(1).SetNoDataValue(-9999)##if you want these values transparent
+    outdata.GetRasterBand(1).SetNoDataValue(no_data_value)##if you want these values transparent
     outdata.GetRasterBand(1).WriteArray(arr_out)
     outdata.FlushCache()    
  
