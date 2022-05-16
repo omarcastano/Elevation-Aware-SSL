@@ -276,7 +276,6 @@ def crop_geotiff_chip(path_to_chip_metadata, path_to_geotiff, path_to_save_cropp
 
     arr_out = arr[nw:-nw:,nh:-nh:]
     
-    print(arr_out.shape)
     if arr_out.shape[0] != new_shape[0]:
         arr_out = arr_out[0:-1, :]
        
