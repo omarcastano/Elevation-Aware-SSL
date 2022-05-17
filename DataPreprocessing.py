@@ -282,7 +282,6 @@ def crop_geotiff_chip(path_to_chip_metadata, path_to_geotiff, path_to_save_cropp
     if arr_out.shape[1] != new_shape[1]:
         arr_out = arr_out[:, 0:-1]
         
-    print(arr_out.shape)
     driver = gdal.GetDriverByName("GTiff")
     outdata = driver.Create(path_to_save_cropped_geotiff, new_shape[1], new_shape[0], 1, gdal.GDT_Int16)
 
