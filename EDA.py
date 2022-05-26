@@ -267,7 +267,7 @@ def pixel_histogram_and_filtered_image(path_to_images, metadata, sample=5, scale
 
     for i, img in enumerate(images[0:sample]):
         ax[0,i].imshow(img.transpose(1,2,0))
-        if labels[i] == 'Deprected':
+        if labels[i] == 'Remove':
             ax[0,i].set_title(f'{labels[i]}', fontsize=20, color='r')
         else: 
             ax[0,i].set_title(f'{labels[i]}', fontsize=20)
