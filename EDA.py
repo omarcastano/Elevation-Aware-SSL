@@ -275,3 +275,40 @@ def pixel_histogram_and_filtered_image(path_to_images, metadata, sample=5, scale
         sns.histplot(x=img.ravel(), ax=ax[1,i])
         ax[1,i].set_xlabel('Pixel Value')
         ax[1,i].legend([f'Mean={img.mean().round(3)} \n Min={img.min().round(3)}, \n Max={img.max().round(3)}'], fontsize=10)
+        
+        
+        
+# helper function for data visualization#
+def visualize_images_and_masks(path_to_label, path_to_images, metadata, n):
+
+    """
+    Plots RGB images and labels 
+
+    Argument:
+        path_to_label: string
+            path to labels
+        path_to_images: string
+            path to imags
+        metadata: data frame
+            dataframe with the name of each image and label
+        n: int
+            number of images to plot
+    """
+    t = 1 ## alpha value
+    cmap = {0:[1.0,0.5,0.5,t],1:[0.5,0.5,0.1,t],2:[0.2,0.8,0.2,t], 3:[0.5,0.5,0.5,t]}
+    labels_pam = {0:'non_agricultural_area', 1:'legal_exclusions', 2:'agricultural_frontier', 3:'uknown'}
+    patches =[mpatches.Patch(color=cmap[i], label=labels_pam[i]) for i in cmap]
+
+    fig, ax = plt.subplots(2, n, figsize=(50,8))
+
+
+    seed = np.random.randint(low=0, high=100)
+    for i in range(n):
+        img =read_numpy_image(path_to_images + metadata["Image"].sample(n, random_state=seed).values[i])
+        label = read_geotiff_image(path_to_label + metadata["Mask"].sample(n, random_state=seed).values[i])
+        ax[0, i].imshow( np.clip(img[0][0:3].transpose(1,2,0), 0, 6000)/6000)
+        ax[1, i].imshow(label)
+
+        arrayShow = np.array([[cmap[i] for i in j] for j in label])  
+        ax[1,i].imshow(arrayShow)
+        plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. , markerscale=30, fontsize ='xx-large')
