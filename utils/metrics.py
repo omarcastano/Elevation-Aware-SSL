@@ -1,4 +1,6 @@
 import numpy as np
+import pandas as pd
+from MasterThesis import EDA
 from sklearn.metrics import confusion_matrix
 
 ## Confusion matrix
