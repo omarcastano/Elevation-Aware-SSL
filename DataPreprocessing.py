@@ -7,8 +7,10 @@ import os
 import numpy as np
 from shapely.geometry import Point, Polygon
 import folium
+from MasterThesis import EDA
 from osgeo import osr, gdal, ogr
 from shapely.ops import unary_union
+from tqdm.autonotebook import tqdm
 
 
 def create_shapefiel_from_polygons(path_to_chip_metadata:str, chip_name:str, chip_padding:float=None, path_to_save:str=None, crs:str='epsg:4326'):
@@ -294,3 +296,29 @@ def crop_geotiff_chip(path_to_chip_metadata, path_to_geotiff, path_to_save_cropp
     outdata.GetRasterBand(1).SetNoDataValue(no_data_value)##if you want these values transparent
     outdata.GetRasterBand(1).WriteArray(arr_out)
     outdata.FlushCache()    
+
+def remove_corruped_labels(path_to_label:str, metadata:pd.DataFrame):
+
+    """
+    Remove corrupted label, that is, labels which values
+    out of the set {0,1,2}
+
+    Argumetns: str
+        path_to_label: str
+            path to the folder where labels are stored
+        
+        metadata: dataframe
+            dataframe with the path to labels
+    """
+
+    drop_index = []
+
+    for _, (label, index) in tqdm(enumerate(zip(metadata.Mask, metadata.index), 0)):
+        lbl = EDA.read_geotiff_image(path_to_label + label)
+        if (lbl >= 3).any():
+            drop_index.append(index)
+
+        elif (lbl < 0).any():
+            drop_index.append(index)
+
+    return metadata.drop(drop_index).reset_index()

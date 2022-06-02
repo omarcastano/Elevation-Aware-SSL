@@ -15,6 +15,7 @@ from osgeo import osr, gdal, ogr
 import earthpy as et
 import earthpy.spatial as es
 import earthpy.plot as ep
+from tqdm.autonotebook import tqdm
 
 #Function that reads geotiff
 def read_geotiff_image(path):
