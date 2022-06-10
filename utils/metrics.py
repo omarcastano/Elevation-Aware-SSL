@@ -66,6 +66,9 @@ def model_evaluation(conf_mt, class_name, dataset_label='Test'):
     overall_acc = np.diag(conf_mt).sum()/conf_mt.sum()
     overall_acc = round(overall_acc, 5)
 
+    #Accuracy by Class
+    acc_by_class = (conf_mt.diagonal()/conf_mt.sum()).round(5)
+
     #Precision per class
     precision = np.round(np.diag(conf_mt)/(conf_mt.sum(axis=0)+1e-8),5)
     unweighted_precision_avg = round(precision.mean(),5)
@@ -91,7 +94,8 @@ def model_evaluation(conf_mt, class_name, dataset_label='Test'):
     weighted_iou = np.round(np.average(class_iou, weights=conf_mt.sum(axis=1)), 5)
 
     scores = pd.DataFrame({f'{dataset_label} Precision':precision, f"{dataset_label} Recall":recall, 
-                                                f"{dataset_label} F1_score":f1_score, f"{dataset_label} IoU":class_iou}, index=class_name)
+                                                f"{dataset_label} F1_score":f1_score, f"{dataset_label} IoU":class_iou,
+                                                f"{dataset_label} Acc_by_Class":acc_by_class}, index=class_name)
 
 
     logs = {f'{i}_Precision':j for i, j in zip(scores.index, scores[f'{dataset_label} Precision'])}
