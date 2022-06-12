@@ -48,6 +48,85 @@ def class_IoU(y_true, y_pred, num_classes):
     return class_iou
 
 
+def per_class_accuracy(conf_mt):
+
+    """
+    Computes per class accuracy
+
+    Argumetns:
+        y_true: 1D numpy array
+            true labels
+        y_pred: 1D numpy array
+            predicted class labels
+    """
+
+    acc = lambda tn, fp, fn, tp:(tp+tn)/(tp+fp+tn+fn+10e-8)
+    
+    acc_by_class = []
+
+    for y in range(conf_mt.shape[0]):
+    
+        tp = conf_mt[:,y][y]
+        tn = np.delete((conf_mt.sum(axis=1) - conf_mt[:,y]), y).sum()
+        acc_by_class.append((tp+tn)/conf_mt.sum())
+
+    return np.array(acc_by_class)
+
+#threshold dependence
+def threshold_metric_evaluation(y_true, y_score, metric='Recall'):
+
+    """
+    Plot the value of a given metric for several probability threshold. 
+
+    Argumetns:
+        y_true: 3D numpy array (N,W,H)
+            Batch of N sample with the true labels
+        y_score: 4D numpy array (N,C,W,H)
+            Batch of N samples with predicted scores 
+        metric: string
+            one of the metric from the following list
+            Accuracy, Precision, Recall, f1_score, FPR
+            FNR, NPV, TNR
+        threshold: Threshold for the probability
+    """
+
+
+    metrics_dict = {'Accuracy':lambda tn, fp, fn, tp:(tp+tn)/(tp+fp+tn+fn+10e-8), 
+                    'Precision':lambda tn, fp, fn, tp:(tp)/(tp+fp+10e-8), 
+                    'Recall':lambda tn, fp, fn, tp:(tp)/(tp+fn+10e-8),
+                    'f1_score': lambda tn, fp, fn, tp:(2*((tp)/(tp+fp+10e-8))*((tp)/(tp+fn+10e-8)))/(((tp)/(tp+fp+10e-8)) + ((tp)/(tp+fn+10e-8))),
+                    'FPR': lambda tn, fp, fn, tp: fp/(fp+tn+10e-8),
+                    'FNR': lambda tn, fp, fn, tp: fn/(fn+tp+10e-8),
+                    'NPV': lambda tn, fp, fn, tp: tn/(tn+fn+10e-8),
+                    'TNR': lambda tn, fp, fn, tp: tn/(tn+fp+10e-8)
+                    }
+
+    metrics = []
+    thresholds = []
+    result = []
+
+    y_true = y_true.ravel()
+
+    for y in np.unique(y_true):
+        y_pred_proba = y_score[:,y,:,:].ravel()
+
+        for t in np.arange(0.01,0.99,0.01):
+
+            y_pred = (y_pred_proba >= t).astype(int)
+            tn, fp, fn, tp = confusion_matrix((y_true==y)*1, y_pred).ravel()
+            metrics = metrics_dict[metric](tn, fp, fn, tp)
+            result.append({'metrics':metrics, 'thresholds':t, 'class':y})
+
+    result = pd.DataFrame(result)
+    fig = px.line(data_frame=result, x='thresholds', y='metrics', color='class', markers=True)
+    fig.update_layout(
+        yaxis_title=f'{metric}',
+        xaxis_title='Threshold',
+        font={'size':14}
+        )
+
+    return fig
+
 def model_evaluation(conf_mt, class_name, dataset_label='Test'):
 
     """
@@ -67,7 +146,7 @@ def model_evaluation(conf_mt, class_name, dataset_label='Test'):
     overall_acc = round(overall_acc, 5)
 
     #Accuracy by Class
-    acc_by_class = (conf_mt.diagonal()/conf_mt.sum()).round(5)
+    acc_by_class = per_class_accuracy(conf_mt)
 
     #Precision per class
     precision = np.round(np.diag(conf_mt)/(conf_mt.sum(axis=0)+1e-8),5)
