@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from MasterThesis import EDA
 from sklearn.metrics import confusion_matrix
+import plotly as px
 
 ## Confusion matrix
 def pixel_confusion_matrix(y_true, y_pred, class_num):
@@ -200,3 +201,37 @@ def model_evaluation(conf_mt, class_name, dataset_label='Test'):
                  f'Unweighted {dataset_label} MIou':unweighted_iou, f'Weighted {dataset_label} MIou':weighted_iou})
 
     return scores, logs
+
+
+def plot_metrics_from_logs(logs, metric='F1_score'):
+
+    """
+    Helper function to plot metrics from wandb logs
+
+    Argumetns:
+        logs: dict
+            WandB dictionary with logs
+        metric: str:
+            on of the follow metrics 'F1_score', 'Recall', 
+            'Precision' or 'Acc_by_Class'
+    """
+  
+    assert metric in ['F1_score', 'Recall', 'Precision', 'Acc_by_Class'], 'The parameter metric must be one of the metrics F1_score, Recall or Precision'
+
+    metric_name = []
+    metric_score = []
+
+    for i, j in logs.items():
+        if (f'{metric}' in i) and ('weighted' not in i.lower()):
+            metric_name.append(i.replace('_'+ f'{metric}', ''))
+            metric_score.append(j)
+
+        
+    fig = px.bar(x=metric_name, y=metric_score)
+    fig.update_layout(
+        xaxis_title = 'Labels',
+        yaxis_title = f'{metric}',
+        font={"size":15}
+    )
+    
+    return fig
