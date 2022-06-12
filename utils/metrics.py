@@ -102,6 +102,7 @@ def model_evaluation(conf_mt, class_name, dataset_label='Test'):
     logs.update({f'{i}_Recall':j for i, j in zip(scores.index, scores[f'{dataset_label} Recall'])})
     logs.update({f'{i}_F1_score':j for i, j in zip(scores.index, scores[f'{dataset_label} F1_score'])})
     logs.update({f'{i}_IoU':j for i, j in zip(scores.index, scores[f'{dataset_label} IoU'])})
+    logs.update({f'{i}_Acc_by_Class':j for i, j in zip(scores.index, scores[f'{dataset_label} Acc_by_Class'])})
 
 
 
