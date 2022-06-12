@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from MasterThesis import EDA
 from sklearn.metrics import confusion_matrix
-import plotly as px
+import plotly.express as px
 
 ## Confusion matrix
 def pixel_confusion_matrix(y_true, y_pred, class_num):
