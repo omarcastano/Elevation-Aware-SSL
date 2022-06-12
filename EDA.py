@@ -306,8 +306,8 @@ def visualize_images_and_masks(path_to_label, path_to_images, metadata, rgb_band
             matplotlib figure size
     """
     t = 1 ## alpha value
-    cmap = {0:[1.0,0.5,0.5,t],1:[0.5,0.5,0.1,t],2:[0.2,0.8,0.2,t], 3:[0.5,0.5,0.5,t]}
-    labels_pam = {0:'non_agricultural_area', 1:'legal_exclusions', 2:'agricultural_frontier', 3:'uknown'}
+    cmap = {0:[1.0,0.5,0.5,t],1:[0.5,0.5,0.1,t],2:[0.2,0.8,0.2,t]}
+    labels_pam = {0:'non_agricultural_area', 1:'legal_exclusions', 2:'agricultural_frontier'}
     patches =[mpatches.Patch(color=cmap[i], label=labels_pam[i]) for i in cmap]
 
     fig, ax = plt.subplots(2, n, figsize=figsize)
@@ -321,10 +321,9 @@ def visualize_images_and_masks(path_to_label, path_to_images, metadata, rgb_band
             label = read_geotiff_image(path_to_label + metadata["Mask"].sample(n, random_state=seed).values[i])
             ax[0, i].imshow( np.clip(img[0][[0,1,2]].transpose(1,2,0), 0, 6000)/6000)
             ax[1, i].imshow(label)
-
             arrayShow = np.array([[cmap[i] for i in j] for j in label])  
             ax[1,i].imshow(arrayShow)
-            plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. , markerscale=30, fontsize ='xx-large')
+            plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. , markerscale=30, fontsize ='large')
 
     else:
         for i in range(n):
@@ -337,4 +336,4 @@ def visualize_images_and_masks(path_to_label, path_to_images, metadata, rgb_band
             ax[1,i].imshow(arrayShow)
             plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. , markerscale=30, fontsize ='xx-large')
 
-
+    return fig
