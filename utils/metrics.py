@@ -117,7 +117,7 @@ class threshold_metric_evaluation:
         for y in np.unique(y_true):
             y_pred_proba = y_score[:,y,:,:].ravel()
 
-            for t in np.arange(0.01,0.99,0.1):
+            for t in np.arange(0.00,0.99,0.1):
 
                 y_pred = (y_pred_proba >= t).astype(int)
                 tn, fp, fn, tp = confusion_matrix((y_true==y)*1, y_pred).ravel()
