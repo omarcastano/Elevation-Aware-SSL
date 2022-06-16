@@ -238,12 +238,67 @@ def plot_metrics_from_logs(logs, metric='F1_score'):
     metric_score = []
 
     for i, j in logs.items():
-        if (f'{metric}' in i) and ('weighted' not in i.lower()):
+        if (f'{metric}' in i) and ('weighted' not in i.lower() and (type(j)==float)):
             metric_name.append(i.replace('_'+ f'{metric}', ''))
             metric_score.append(j)
 
         
     fig = px.bar(x=metric_name, y=metric_score)
+    fig.update_layout(
+        xaxis_title = 'Labels',
+        yaxis_title = f'{metric}',
+        font={"size":15}
+    )
+    
+    return fig
+
+
+def plot_metrics_from_wandb(wandb, project='MasterThesis', entity='omar_castno', version='baseline', metric='F1_score'):
+
+    """
+    Helper function to plot metrics from several runs stored in wandb
+
+    Argumetns:
+        wandb: wandb module
+        project: str
+            wandb project name
+        entity: str
+            name of the wandb entity
+        version: str
+            identifier to filter wandb runs
+        metric: str
+            on of the follow metrics 'F1_score', 'Recall', 
+            'Precision' or 'Acc_by_Class'
+    """
+  
+    assert metric in ['F1_score', 'Recall', 'Precision', 'Acc_by_Class'], 'The parameter metric must be one of the metrics F1_score, Recall or Precision'
+
+    api = wandb.Api()
+    runs = api.runs(entity + "/" + project) 
+
+    summary_runs = []
+    for run in runs:
+        summary = run.summary._json_dict
+        summary.update(run.config)
+        summary.update({'id':run.id})
+        summary_runs.append(summary)
+
+
+    metric_name = []
+    metric_score = []
+    for logs in summary_runs:
+        if logs['version'] == version:
+            for i, j in logs.items():
+                if (f'{metric}' in i) and ('weighted' not in i.lower() and (type(j)==float)):
+                    metric_name.append(i.replace('_'+ f'{metric}', ''))
+                    metric_score.append(j)
+
+    df = pd.DataFrame({'metrics':metric_score, 'class':metric_name})
+    df = df.groupby('class', as_index=False).agg(mean=('metrics', 'mean'), std=('metrics', 'std'))
+
+    print(df)
+        
+    fig = px.bar(data_frame=df, y='mean', x='class', error_y='std')
     fig.update_layout(
         xaxis_title = 'Labels',
         yaxis_title = f'{metric}',
