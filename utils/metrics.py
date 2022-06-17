@@ -88,7 +88,8 @@ class threshold_metric_evaluation:
                 one of the metric from the following list
                 Accuracy, Precision, Recall, f1_score, FPR
                 FNR, NPV, TNR
-            threshold: Threshold for the probability
+            select_classes: list
+                list with the name of the classes
         """
 
     def __init__(self, select_classes, metric='Recall'):
@@ -143,6 +144,79 @@ class threshold_metric_evaluation:
             font={'size':14} )
 
         return fig
+#precision recall curve
+class precision_recall_curve:
+
+    """
+        Plot the multiclass precision recall curves
+
+        Argumetns:
+            y_true: 3D numpy array (N,W,H)
+                Batch of N sample with the true labels
+            y_score: 4D numpy array (N,C,W,H)
+                Batch of N samples with predicted scores 
+            select_classes: list
+                list with the name of the classes
+        """
+
+    def __init__(self, select_classes):
+        self.select_classes = select_classes
+        self.epoch = 0
+
+    def metric_evaluation(self, y_true, y_score):
+
+        metrics_dict = {'Accuracy':lambda tn, fp, fn, tp:(tp+tn)/(tp+fp+tn+fn+10e-8), 
+                        'Precision':lambda tn, fp, fn, tp:(tp)/(tp+fp+10e-8), 
+                        'Recall':lambda tn, fp, fn, tp:(tp)/(tp+fn+10e-8),
+                        'f1_score': lambda tn, fp, fn, tp:(2*((tp)/(tp+fp+10e-8))*((tp)/(tp+fn+10e-8)))/(((tp)/(tp+fp+10e-8)) + ((tp)/(tp+fn+10e-8))),
+                        'FPR': lambda tn, fp, fn, tp: fp/(fp+tn+10e-8),
+                        'FNR': lambda tn, fp, fn, tp: fn/(fn+tp+10e-8),
+                        'NPV': lambda tn, fp, fn, tp: tn/(tn+fn+10e-8),
+                        'TNR': lambda tn, fp, fn, tp: tn/(tn+fp+10e-8)
+                        }
+
+        precision = []
+        recall = []
+        thresholds = []
+        result = []
+
+        y_true = y_true.ravel()
+
+        for y in np.unique(y_true):
+            y_pred_proba = y_score[:,y,:,:].ravel()
+
+            for t in np.arange(0.00,0.99,0.1):
+
+                y_pred = (y_pred_proba >= t).astype(int)
+                tn, fp, fn, tp = confusion_matrix((y_true==y)*1, y_pred).ravel()
+                recall = metrics_dict['Recall'](tn, fp, fn, tp) #recall_score((y_true==y)*1, y_pred, pos_label=1, zero_division=1)#
+                precision = metrics_dict['Precision'](tn, fp, fn, tp) #precision_score((y_true==y)*1, y_pred, pos_label=1, zero_division=1) #
+                result.append({'recall':recall, 'precision':precision, 'TP':tp,
+                               'thresholds':round(t,3), 'class':self.select_classes[y]})
+        print(tn, fp, fn, tp)
+        if self.epoch == 0:
+            self.result = pd.DataFrame(result)
+            self.epoch += 1
+        else:
+            self.result.recall += pd.DataFrame(result).recall
+            self.result.precision += pd.DataFrame(result).precision
+            self.epoch += 1
+
+
+    def get_bar_plot(self):
+        
+        self.result.recall /= self.epoch
+        self.result.precision /= self.epoch
+
+        fig = px.line(data_frame=self.result, x='recall', y='precision', color='class', markers=True, hover_data=['thresholds', 'TP'])
+        fig.update_layout(
+            yaxis_title=f'Precision',
+            xaxis_title='Recall',
+            font={'size':14} )
+
+        return fig
+
+
 
 def model_evaluation(conf_mt, class_name, dataset_label='Test'):
 
