@@ -122,7 +122,7 @@ class threshold_metric_evaluation:
                 y_pred = (y_pred_proba >= t).astype(int)
                 tn, fp, fn, tp = confusion_matrix((y_true==y)*1, y_pred).ravel()
                 metrics = metrics_dict[self.metric](tn, fp, fn, tp)
-                result.append({'metrics':metrics, 'thresholds':t, 'class':self.select_classes[y]})
+                result.append({f"{self.metric}":metrics, 'thresholds':t, 'class':self.select_classes[y]})
 
         if self.epoch == 0:
             self.result = pd.DataFrame(result)
@@ -136,7 +136,7 @@ class threshold_metric_evaluation:
         
         self.result.metrics /= self.epoch
 
-        fig = px.line(data_frame=self.result, x='thresholds', y='metrics', color='class', markers=True)
+        fig = px.line(data_frame=self.result, x='thresholds', y=f"{self.metric}", color='class', markers=True)
         fig.update_layout(
             yaxis_title=f'{self.metric}',
             xaxis_title='Threshold',
