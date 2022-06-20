@@ -3,6 +3,7 @@ import pandas as pd
 from MasterThesis import EDA
 from sklearn.metrics import confusion_matrix
 import plotly.express as px
+from sklearn.metrics import recall_score, precision_score, f1_score
 
 ## Confusion matrix
 def pixel_confusion_matrix(y_true, y_pred, class_num):
@@ -73,7 +74,7 @@ def per_class_accuracy(conf_mt):
 
     return np.array(acc_by_class)
 
-#threshold dependence
+#precision recall curve
 class threshold_metric_evaluation:
 
     """
@@ -90,74 +91,7 @@ class threshold_metric_evaluation:
                 FNR, NPV, TNR
             select_classes: list
                 list with the name of the classes
-        """
-
-    def __init__(self, select_classes, metric='Recall'):
-        self.metric = metric
-        self.select_classes = select_classes
-        self.epoch = 0
-
-    def metric_evaluation(self, y_true, y_score):
-
-        metrics_dict = {'Accuracy':lambda tn, fp, fn, tp:(tp+tn)/(tp+fp+tn+fn+10e-8), 
-                        'Precision':lambda tn, fp, fn, tp:(tp)/(tp+fp+10e-8), 
-                        'Recall':lambda tn, fp, fn, tp:(tp)/(tp+fn+10e-8),
-                        'f1_score': lambda tn, fp, fn, tp:(2*((tp)/(tp+fp+10e-8))*((tp)/(tp+fn+10e-8)))/(((tp)/(tp+fp+10e-8)) + ((tp)/(tp+fn+10e-8))),
-                        'FPR': lambda tn, fp, fn, tp: fp/(fp+tn+10e-8),
-                        'FNR': lambda tn, fp, fn, tp: fn/(fn+tp+10e-8),
-                        'NPV': lambda tn, fp, fn, tp: tn/(tn+fn+10e-8),
-                        'TNR': lambda tn, fp, fn, tp: tn/(tn+fp+10e-8)
-                        }
-
-        metrics = []
-        thresholds = []
-        result = []
-
-        y_true = y_true.ravel()
-
-        for y in np.unique(y_true):
-            y_pred_proba = y_score[:,y,:,:].ravel()
-
-            for t in np.arange(0.00,0.99,0.1):
-
-                y_pred = (y_pred_proba >= t).astype(int)
-                tn, fp, fn, tp = confusion_matrix((y_true==y)*1, y_pred).ravel()
-                metrics = metrics_dict[self.metric](tn, fp, fn, tp)
-                result.append({f"{self.metric}":metrics, 'thresholds':t, 'class':self.select_classes[y]})
-
-        if self.epoch == 0:
-            self.result = pd.DataFrame(result)
-            self.epoch += 1
-        else:
-            self.result.metrics += pd.DataFrame(result).metrics
-            self.epoch += 1
-
-
-    def get_bar_plot(self):
-        
-        self.result.metrics /= self.epoch
-
-        fig = px.line(data_frame=self.result, x='thresholds', y=f"{self.metric}", color='class', markers=True)
-        fig.update_layout(
-            yaxis_title=f'{self.metric}',
-            xaxis_title='Threshold',
-            font={'size':14} )
-
-        return fig
-#precision recall curve
-class precision_recall_curve:
-
     """
-        Plot the multiclass precision recall curves
-
-        Argumetns:
-            y_true: 3D numpy array (N,W,H)
-                Batch of N sample with the true labels
-            y_score: 4D numpy array (N,C,W,H)
-                Batch of N samples with predicted scores 
-            select_classes: list
-                list with the name of the classes
-        """
 
     def __init__(self, select_classes):
         self.select_classes = select_classes
@@ -165,19 +99,6 @@ class precision_recall_curve:
 
     def metric_evaluation(self, y_true, y_score):
 
-        metrics_dict = {'Accuracy':lambda tn, fp, fn, tp:(tp+tn)/(tp+fp+tn+fn+10e-8), 
-                        'Precision':lambda tn, fp, fn, tp:(tp)/(tp+fp+10e-8), 
-                        'Recall':lambda tn, fp, fn, tp:(tp)/(tp+fn+10e-8),
-                        'f1_score': lambda tn, fp, fn, tp:(2*((tp)/(tp+fp+10e-8))*((tp)/(tp+fn+10e-8)))/(((tp)/(tp+fp+10e-8)) + ((tp)/(tp+fn+10e-8))),
-                        'FPR': lambda tn, fp, fn, tp: fp/(fp+tn+10e-8),
-                        'FNR': lambda tn, fp, fn, tp: fn/(fn+tp+10e-8),
-                        'NPV': lambda tn, fp, fn, tp: tn/(tn+fn+10e-8),
-                        'TNR': lambda tn, fp, fn, tp: tn/(tn+fp+10e-8)
-                        }
-
-        precision = []
-        recall = []
-        thresholds = []
         result = []
 
         y_true = y_true.ravel()
@@ -189,33 +110,67 @@ class precision_recall_curve:
 
                 y_pred = (y_pred_proba >= t).astype(int)
                 tn, fp, fn, tp = confusion_matrix((y_true==y)*1, y_pred).ravel()
-                recall = metrics_dict['Recall'](tn, fp, fn, tp) #recall_score((y_true==y)*1, y_pred, pos_label=1, zero_division=1)#
-                precision = metrics_dict['Precision'](tn, fp, fn, tp) #precision_score((y_true==y)*1, y_pred, pos_label=1, zero_division=1) #
-                result.append({'recall':recall, 'precision':precision, 'TP':tp,
-                               'thresholds':round(t,3), 'class':self.select_classes[y]})
-        print(tn, fp, fn, tp)
+                recall = recall_score((y_true==y)*1, y_pred, pos_label=1, zero_division=0)
+                precision = precision_score((y_true==y)*1, y_pred, pos_label=1, zero_division=0)
+                f1 = f1_score((y_true==y)*1, y_pred, pos_label=1, zero_division=0)
+                result.append({'recall':recall, 'precision':precision, 'f1_score':f1,
+                               'thresholds':round(t, 3), 'class':self.select_classes[y]})
+                
         if self.epoch == 0:
             self.result = pd.DataFrame(result)
             self.epoch += 1
         else:
             self.result.recall += pd.DataFrame(result).recall
             self.result.precision += pd.DataFrame(result).precision
+            self.result.f1_score += pd.DataFrame(result).f1_score
             self.epoch += 1
 
 
-    def get_bar_plot(self):
-        
-        self.result.recall /= self.epoch
-        self.result.precision /= self.epoch
+    def plot_PR_curve(self):
 
-        fig = px.line(data_frame=self.result, x='recall', y='precision', color='class', markers=True, hover_data=['thresholds', 'TP'])
+        result = self.result.copy()
+
+        if self.epoch != 0:
+            result.recall /= self.epoch
+            result.precision /= self.epoch
+            result.f1_score /= self.epoch
+
+        fig = px.line(data_frame=result, x='recall', y='precision', color='class', markers=True, hover_data=['thresholds'])
         fig.update_layout(
             yaxis_title=f'Precision',
             xaxis_title='Recall',
-            font={'size':14} )
+            font={'size':14})
+        
+        return fig
+    
+
+    def get_bar_plot(self, metric='Recall'):
+
+        result = self.result.copy()
+
+        if self.epoch != 0:
+            result.recall /= self.epoch
+            result.precision /= self.epoch
+            result.f1_score /= self.epoch
+
+        fig = px.line(data_frame=result, x='thresholds', y=f"{metric}", color='class', markers=True)
+        fig.update_layout(
+            yaxis_title=f'{metric}',
+            xaxis_title='Threshold',
+            font={'size':14})
 
         return fig
 
+    def get_table(self):
+
+        result = self.result.copy()
+
+        if self.epoch != 0:
+            result.recall /= self.epoch
+            result.precision /= self.epoch
+            result.f1_score /= self.epoch
+
+        return result
 
 
 def model_evaluation(conf_mt, class_name, dataset_label='Test'):
@@ -369,8 +324,6 @@ def plot_metrics_from_wandb(wandb, project='MasterThesis', entity='omar_castno',
 
     df = pd.DataFrame({'metrics':metric_score, 'class':metric_name})
     df = df.groupby('class', as_index=False).agg(mean=('metrics', 'mean'), std=('metrics', 'std'))
-
-    print(df)
         
     fig = px.bar(data_frame=df, y='mean', x='class', error_y='std')
     fig.update_layout(
@@ -380,3 +333,35 @@ def plot_metrics_from_wandb(wandb, project='MasterThesis', entity='omar_castno',
     )
     
     return fig
+
+def plot_metrics_from_artifacts(wandb, table_name='Table_Metrics', project='MasterThesis', entity='omar_castno', version='baseline'):
+
+    api = wandb.Api()
+    runs = api.runs(entity + "/" + project) 
+
+    summary_runs = []
+    for run in runs:
+        summary = run.summary._json_dict
+        summary.update(run.config)
+        summary.update({'id':run.id})
+        summary_runs.append(summary)    
+
+    run =  wandb.init()
+    precision = 0
+    recall = 0
+    f1_score = 0
+    ids = [j['id'] for j in summary_runs if j['version'] == version]
+
+    for n, id in enumerate(ids, 1):
+        my_table = run.use_artifact(f"omar_castno/MasterThesis/run-{id}-RecallbyThreshold:v0").get(table_name)
+        my_table = pd.DataFrame(data=my_table.data, columns=my_table.columns)
+        precision += my_table.precision
+        recall += my_table.recall
+        f1_score += my_table.f1_score
+
+
+    my_table['recall'] = recall/n
+    my_table['precision'] = precision/n
+    my_table['f1_score'] = f1_score/n
+
+    return my_table
