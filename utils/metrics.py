@@ -352,10 +352,6 @@ def plot_metrics_from_artifacts(wandb, table_name='Table_Metrics', project='Mast
     f1_score = 0
     ids = [j['id'] for j in summary_runs if j['version'] == version]
 
-    print('---------------------------------------------')
-    print(ids)
-    print('---------------------------------------------')
-
     for n, id in enumerate(ids, 1):
         my_table = run.use_artifact(f"omar_castno/MasterThesis/run-{id}-{table_name}:v0").get(table_name)
         my_table = pd.DataFrame(data=my_table.data, columns=my_table.columns)
