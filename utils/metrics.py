@@ -335,7 +335,22 @@ def plot_metrics_from_wandb(wandb, project='MasterThesis', entity='omar_castno',
     return fig
 
 def plot_metrics_from_artifacts(wandb, table_name='Table_Metrics', project='MasterThesis', entity='omar_castno', version='baseline'):
+    
+    """
+    Helper function to plot metrics from WandB artifacts(Tables)
 
+
+    Argumetns:
+        wandb: wandb module
+        table_name: str
+            Table artifact name
+        project: str
+            wandb project name
+        entity: str
+            name of the wandb entity
+        version: str
+            identifier to filter wandb runs
+    """
     api = wandb.Api()
     runs = api.runs(entity + "/" + project) 
 
@@ -365,3 +380,62 @@ def plot_metrics_from_artifacts(wandb, table_name='Table_Metrics', project='Mast
     my_table['f1_score'] = f1_score/n
 
     return my_table
+
+
+def plot_loss_from_artifact(wandb, table_name='Loss', project='MasterThesis', entity='omar_castno', version='baseline'):
+
+    """
+    Helper function to plot average train and test loss from different runs
+
+
+    Argumetns:
+        wandb: wandb module
+        table_name: str
+            Table artifact name
+        project: str
+            wandb project name
+        entity: str
+            name of the wandb entity
+        version: str
+            identifier to filter wandb runs
+    """
+
+    api = wandb.Api()
+    runs = api.runs(entity + "/" + project) 
+
+    summary_runs = []
+    for run in runs:
+        summary = run.summary._json_dict
+        summary.update(run.config)
+        summary.update({'id':run.id})
+        summary_runs.append(summary)    
+
+    run =  wandb.init()
+    df = pd.DataFrame(columns=['train_loss', 'test_loss'])
+    train_loss = 0
+    test_loss = 0
+    ids = [j['id'] for j in summary_runs if j['version'] == version]
+
+    for n, id in enumerate(ids, 1):
+        my_table = run.use_artifact(f"omar_castno/MasterThesis/run-{id}-{table_name}:v0").get(table_name)
+        my_table = pd.DataFrame(data=my_table.data, columns=my_table.columns)
+        df = df.append(my_table, ignore_index=False)
+        train_loss += my_table.train_loss
+        test_loss += my_table.test_loss
+
+    df.reset_index(inplace=True)
+    df['index'] += 1
+    df.rename(columns={'index':'epoch'}, inplace = True)
+    df = df.groupby('epoch', as_index=False).agg(train_loss=('train_loss','mean'),
+                                                train_loss_std=('train_loss','std'),
+                                                test_loss=('test_loss','mean'),
+                                                test_loss_std=('test_loss','std'))
+
+
+    fig = px.line(data_frame=df, x='epoch' ,y=['train_loss', 'test_loss'], markers=True)
+    fig.update_layout(
+            yaxis_title='Score',
+            xaxis_title='Epoch',
+            font={'size':14})
+
+    return fig
