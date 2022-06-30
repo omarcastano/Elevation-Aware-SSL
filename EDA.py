@@ -122,11 +122,12 @@ def less_cloudy_image(images):
             Time series images
     """
     
-    means = images[:,0:3,:,:].mean(axis=(1,2,3))
-    idx = means[means > 0].argmin()
-
-    return images[idx]
-
+    if len(images)==4:
+        means = images[:,0:3,:,:].mean(axis=(1,2,3))
+        idx = means[means > 0].argmin()
+        return images[idx]
+    else:
+        return images
 #Plot less cloudy image from the time seires
 def pixel_histogram_with_image(path_to_images, metadata, sample=5, scale_factor=13000, cloud_mask=False ,clip=None):
 
