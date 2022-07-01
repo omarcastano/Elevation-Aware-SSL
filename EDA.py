@@ -122,7 +122,7 @@ def less_cloudy_image(images):
             Time series images
     """
     
-    if len(images)==4:
+    if len(images.shape)==4:
         means = images[:,0:3,:,:].mean(axis=(1,2,3))
         idx = means[means > 0].argmin()
         return images[idx]
