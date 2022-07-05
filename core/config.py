@@ -1,5 +1,4 @@
 import os
-from MasterThesis import EDA
 import multiprocessing as mp
 
 def config_notebook(copy_data_to_content=True):
@@ -45,6 +44,7 @@ def load_image_and_labels(img_path, label_path):
         img_path: path to image
         label_path:  path to label
     """
+    from MasterThesis import EDA
 
     img = EDA.read_numpy_image(img_path)
     lbl = EDA.read_geotiff_image(label_path)
