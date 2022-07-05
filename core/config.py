@@ -1,4 +1,6 @@
 import os
+from MasterThesis import EDA
+import multiprocessing as mp
 
 def config_notebook(copy_data_to_content=True):
 
@@ -32,3 +34,33 @@ def config_notebook(copy_data_to_content=True):
 
         if not os.path.isdir('/content/LabelsGeoTiff'):
             os.popen("cp -r '/content/drive/MyDrive/Colab Notebooks/Maestria Ing/Theses/GeoDataset/Sentinel_2_Images' /content")
+
+
+def load_image_and_labels(img_path, label_path):
+
+    """
+    Load Image and label given the path
+
+    Arguments:
+        img_path: path to image
+        label_path:  path to label
+    """
+
+    img = EDA.read_numpy_image(img_path)
+    lbl = EDA.read_geotiff_image(label_path)
+
+def image_label_sanity_check(metadata, path_to_images, path_to_labels):
+    
+    """
+    load all images and labels to verify they exist on the folder
+
+    Arguments:
+       metadata: dataframe with the path to label and images
+       path_to_images: path to the folder where all images are stored
+       path_to_labels: path to the folder where all labels are stored
+
+    """
+
+    with mp.Pool(mp.cpu_count()) as p:
+        p.starmap(load_image_and_labels, zip(path_to_images + metadata.Image , path_to_labels + metadata.Mask))
+        
