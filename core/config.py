@@ -31,4 +31,4 @@ def config_notebook(copy_data_to_content=True):
             os.popen("cp -r '/content/drive/MyDrive/Colab Notebooks/Maestria Ing/Theses/GeoDataset/LabelsGeoTiff' /content")
 
         if not os.path.isdir('/content/LabelsGeoTiff'):
-            os.popen("cp -r '/content/drive/MyDrive/Colab Notebooks/Maestria Ing/Theses/GeoDataset/TrainImages' /content")
+            os.popen("cp -r '/content/drive/MyDrive/Colab Notebooks/Maestria Ing/Theses/GeoDataset/Sentinel_2_images' /content")
