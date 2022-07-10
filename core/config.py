@@ -15,10 +15,13 @@ def config_notebook(copy_data_to_content=True):
 
 
     #Install extra libraries
+    os.popen("pip install 'opencv-python-headless<4.3'")
     os.popen("pip install mlxtend --upgrade --no-deps").read()
     os.popen("pip install geopandas").read()
     os.popen("pip install earthpy").read()
     os.popen("pip install wandb -qqq").read()
+    os.popen("pip install -U git+https://github.com/albumentations-team/albumentations")
+
 
     print(os.popen("nvidia-smi").read())
 
