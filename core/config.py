@@ -9,8 +9,7 @@ def config_notebook(copy_data_to_content=True):
 
     #Clone GLCNET repo
     os.popen("git clone https://github.com/GeoX-Lab/G-RSIM.git").read()
-    os.popen("mkdir SSL").read()
-    os.popen("mv /content/G-RSIM/T-SS-GLCNet/* /content/SSL").read()
+    os.popen("mv /content/G-RSIM/T-SS-GLCNet/* /content").read()
     os.popen("rm -rf G-RSIM").read()
 
 
