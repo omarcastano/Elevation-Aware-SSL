@@ -5,6 +5,8 @@ import cv2
 import albumentations as album
 from MasterThesis import EDA
 import torch
+import matplotlib.pyplot as plt
+import plotly.express as px
 from sklearn.metrics import confusion_matrix
 
 
