@@ -20,7 +20,8 @@ def config_notebook(copy_data_to_content=True):
     os.popen("pip install geopandas").read()
     os.popen("pip install earthpy").read()
     os.popen("pip install wandb -qqq").read()
-    os.popen("pip install -U git+https://github.com/albumentations-team/albumentations")
+    os.popen("pip install -U albumentations")
+    #os.popen("pip install -U git+https://github.com/albumentations-team/albumentations")
 
 
     print(os.popen("nvidia-smi").read())
