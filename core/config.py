@@ -32,10 +32,10 @@ def config_notebook(copy_data_to_content=True):
     if copy_data_to_content:
         #Copy data to content
         if not os.path.isdir('/content/LabelsGeoTiff'):
-            os.popen("cp -r '/content/drive/MyDrive/Colab Notebooks/Maestria Ing/Theses/GeoDataset/LabelsGeoTiff' /content")
+            os.popen("cp -r '/content/drive/MyDrive/Colab Notebooks/Maestria Ing/Theses/GeoDataset/LabelsGeoTiff' /content").read()
 
         if not os.path.isdir('/content/LabelsGeoTiff'):
-            os.popen("cp -r '/content/drive/MyDrive/Colab Notebooks/Maestria Ing/Theses/GeoDataset/Sentinel_2_Images' /content")
+            os.popen("cp -r '/content/drive/MyDrive/Colab Notebooks/Maestria Ing/Theses/GeoDataset/Sentinel_2_Images' /content").read()
 
 
 def load_image_and_labels(img_path, label_path):
