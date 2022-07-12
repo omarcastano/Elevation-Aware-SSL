@@ -10,6 +10,7 @@ from MasterThesis.utils import metrics, simclr
 from torch.utils.data import DataLoader
 from torch.nn import Module
 import torch
+from tqdm.autonotebook import tqdm
 
 def data_augmentation(image, label, input_size):
     
@@ -114,7 +115,7 @@ def train_one_epoch(train_dataloader:DataLoader, model:Module, loss_fn:Module, o
     conf_mt = 0
 
     model.train()
-    for epoch, (image, label) in enumerate(train_dataloader, 1):
+    for epoch, (image, label) in enumerate(tqdm(train_dataloader, desc='Training'), 1):
 
         images, labels = image.to(device), label.to(device)
 
@@ -170,7 +171,7 @@ def test_one_epoch(test_loader:DataLoader, model:Module, loss_fn:Module, class_n
     model.eval()
 
     with torch.no_grad():
-        for epoch , (inputs, labels) in enumerate(test_loader, 1):
+        for epoch , (inputs, labels) in enumerate(tqdm(test_loader, desc='Testing'), 1):
 
             inputs, labels = inputs.to(device), labels.to(device)
 
