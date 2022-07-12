@@ -338,3 +338,30 @@ def visualize_images_and_masks(path_to_label, path_to_images, metadata, rgb_band
             plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. , markerscale=30, fontsize ='xx-large')
 
     return fig
+
+def label_pixel_distributio(path_to_label:str, metadata:pd.DataFrame, select_classes:list):
+
+    """
+    Plots label distribution 
+
+    Arguments:
+        path_to_label: path to labels
+        metadata: dataframe with the names of images and labels
+        path_to_labels: path to the folder where labels are stored
+        select_classes: list with the name of each class
+
+    """
+
+    select_classes = ['non_agricultural_area', 'legal_exclusions', 'agricultural_frontier']
+    unique = np.zeros(3)
+
+    for label in tqdm(metadata.Mask):
+        lbl = read_geotiff_image(path_to_label + label)
+        n_unique, counts = np.unique(lbl, return_counts=True)
+        unique[n_unique] += counts
+
+    unique = (unique*100/unique.sum()).round(3)
+    fig = px.bar(x=select_classes , y=unique)
+    fig.update_layout(xaxis_title="Labels", yaxis_title="Percentage")
+
+    return fig
