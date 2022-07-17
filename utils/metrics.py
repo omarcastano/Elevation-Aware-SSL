@@ -126,7 +126,7 @@ class threshold_metric_evaluation:
             self.epoch += 1
 
 
-    def plot_PR_curve(self):
+    def plot_PR_curve(self, color='class'):
 
         result = self.result.copy()
 
@@ -135,7 +135,7 @@ class threshold_metric_evaluation:
             result.precision /= self.epoch
             result.f1_score /= self.epoch
 
-        fig = px.line(data_frame=result, x='recall', y='precision', color='class', markers=True, hover_data=['thresholds'])
+        fig = px.line(data_frame=result, x='recall', y='precision', color=color, markers=True, hover_data=['thresholds'])
         fig.update_layout(
             yaxis_title=f'Precision',
             xaxis_title='Recall',
@@ -144,7 +144,7 @@ class threshold_metric_evaluation:
         return fig
     
 
-    def get_bar_plot(self, metric='Recall'):
+    def get_bar_plot(self, metric='Recall', color='class'):
 
         result = self.result.copy()
 
@@ -153,7 +153,7 @@ class threshold_metric_evaluation:
             result.precision /= self.epoch
             result.f1_score /= self.epoch
 
-        fig = px.line(data_frame=result, x='thresholds', y=f"{metric}", color='class', markers=True)
+        fig = px.line(data_frame=result, x='thresholds', y=f"{metric}", color=color, markers=True)
         fig.update_layout(
             yaxis_title=f'{metric}',
             xaxis_title='Threshold',
@@ -281,8 +281,7 @@ def plot_metrics_from_logs(logs, metric='F1_score'):
     
     return fig
 
-
-def plot_metrics_from_wandb(wandb, project='MasterThesis', entity='omar_castno', version='baseline', metric='F1_score'):
+def plot_metrics_from_wandb(wandb, project='MasterThesis', entity='omar_castno', version='baseline', ft_data=0.02, metric='F1_score'):
 
     """
     Helper function to plot metrics from several runs stored in wandb
@@ -315,17 +314,20 @@ def plot_metrics_from_wandb(wandb, project='MasterThesis', entity='omar_castno',
 
     metric_name = []
     metric_score = []
+    metric_version = []
     for logs in summary_runs:
-        if logs['version'] == version:
+        if (logs['version'] in version) and (logs['amount_of_ft_data'] == ft_data):
             for i, j in logs.items():
                 if (f'{metric}' in i) and ('weighted' not in i.lower() and (type(j)==float)):
                     metric_name.append(i.replace('_'+ f'{metric}', ''))
                     metric_score.append(j)
+                    metric_version.append(logs['version'])
 
-    df = pd.DataFrame({'metrics':metric_score, 'class':metric_name})
-    df = df.groupby('class', as_index=False).agg(mean=('metrics', 'mean'), std=('metrics', 'std'))
+    df = pd.DataFrame({'metrics':metric_score, 'class':metric_name, 'version':metric_version})
+    df_1 = df.copy()
+    df = df.groupby(['class', 'version'], as_index=False).agg(mean=('metrics', 'mean'), std=('metrics', 'std'))
         
-    fig = px.bar(data_frame=df, y='mean', x='class', error_y='std')
+    fig = px.bar(data_frame=df, y='mean', x='class', error_y='std', color='version', barmode='group')
     fig.update_layout(
         xaxis_title = 'Labels',
         yaxis_title = f'{metric}',
@@ -334,7 +336,7 @@ def plot_metrics_from_wandb(wandb, project='MasterThesis', entity='omar_castno',
     
     return fig
 
-def plot_metrics_from_artifacts(wandb, table_name='Table_Metrics', project='MasterThesis', entity='omar_castno', version='baseline'):
+def plot_metrics_from_artifacts(wandb, table_name='Table_Metrics', project='MasterThesis', entity='omar_castno', version='baseline', ft_data=0.02):
     
     """
     Helper function to plot metrics from WandB artifacts(Tables)
@@ -365,7 +367,7 @@ def plot_metrics_from_artifacts(wandb, table_name='Table_Metrics', project='Mast
     precision = 0
     recall = 0
     f1_score = 0
-    ids = [j['id'] for j in summary_runs if j['version'] == version]
+    ids = [j['id'] for j in summary_runs if (j['version'] == version) and (j['amount_of_ft_data'] == ft_data)]
 
     for n, id in enumerate(ids, 1):
         my_table = run.use_artifact(f"omar_castno/MasterThesis/run-{id}-{table_name}:v0").get(table_name)
@@ -374,13 +376,12 @@ def plot_metrics_from_artifacts(wandb, table_name='Table_Metrics', project='Mast
         recall += my_table.recall
         f1_score += my_table.f1_score
 
-
     my_table['recall'] = recall/n
     my_table['precision'] = precision/n
     my_table['f1_score'] = f1_score/n
+    my_table['version'] = version
 
     return my_table
-
 
 def plot_loss_from_artifact(wandb, table_name='Loss', project='MasterThesis', entity='omar_castno', version='baseline'):
 
