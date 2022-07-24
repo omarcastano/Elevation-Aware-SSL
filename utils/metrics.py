@@ -281,7 +281,7 @@ def plot_metrics_from_logs(logs, metric='F1_score'):
     
     return fig
 
-def plot_metrics_from_wandb(wandb, project='MasterThesis', entity='omar_castno', version='baseline', ft_data=0.02, metric='F1_score'):
+def plot_metrics_from_wandb(wandb, project='MasterThesis', entity='omar_castno', version=['baseline'], ft_data=[0.02], metric='F1_score'):
 
     """
     Helper function to plot metrics from several runs stored in wandb
@@ -292,7 +292,7 @@ def plot_metrics_from_wandb(wandb, project='MasterThesis', entity='omar_castno',
             wandb project name
         entity: str
             name of the wandb entity
-        version: str
+        version: list[str]
             identifier to filter wandb runs
         metric: str
             on of the follow metrics 'F1_score', 'Recall', 
@@ -316,7 +316,7 @@ def plot_metrics_from_wandb(wandb, project='MasterThesis', entity='omar_castno',
     metric_score = []
     metric_version = []
     for logs in summary_runs:
-        if (logs['version'] in version) and (logs['amount_of_ft_data'] == ft_data):
+        if (logs['version'] in version) and (logs['amount_of_ft_data'] in ft_data):
             for i, j in logs.items():
                 if (f'{metric}' in i) and ('weighted' not in i.lower() and (type(j)==float)):
                     metric_name.append(i.replace('_'+ f'{metric}', ''))
