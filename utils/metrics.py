@@ -281,7 +281,7 @@ def plot_metrics_from_logs(logs, metric='F1_score'):
     
     return fig
 
-def plot_metrics_from_wandb(wandb, project='MasterThesis', entity='omar_castno', version=['baseline'], ft_data=[0.02], metric='F1_score'):
+def plot_metrics_from_wandb(wandb, project='MasterThesis', entity='omar_castno', version=['baseline'], ft_data=[0.02], metric='F1_score', summary_plot=False):
 
     """
     Helper function to plot metrics from several runs stored in wandb
@@ -315,6 +315,8 @@ def plot_metrics_from_wandb(wandb, project='MasterThesis', entity='omar_castno',
     metric_name = []
     metric_score = []
     metric_version = []
+    metric_ft_data = []
+
     for logs in summary_runs:
         if (logs['version'] in version) and (logs['amount_of_ft_data'] in ft_data):
             for i, j in logs.items():
@@ -322,17 +324,28 @@ def plot_metrics_from_wandb(wandb, project='MasterThesis', entity='omar_castno',
                     metric_name.append(i.replace('_'+ f'{metric}', ''))
                     metric_score.append(j)
                     metric_version.append(logs['version'])
+                    metric_ft_data.append(logs['amount_of_ft_data'])
 
-    df = pd.DataFrame({'metrics':metric_score, 'class':metric_name, 'version':metric_version})
-    df_1 = df.copy()
-    df = df.groupby(['class', 'version'], as_index=False).agg(mean=('metrics', 'mean'), std=('metrics', 'std'))
-        
-    fig = px.bar(data_frame=df, y='mean', x='class', error_y='std', color='version', barmode='group')
-    fig.update_layout(
-        xaxis_title = 'Labels',
-        yaxis_title = f'{metric}',
-        font={"size":15}
-    )
+    df = pd.DataFrame({'metrics':metric_score, 'class':metric_name, 'version':metric_version, 'ft_data':np.array(metric_ft_data)*100})
+    df['version_class'] = df['class'] + "_" + df['version']
+
+    if summary_plot:
+        df = df.groupby(['version_class', 'ft_data'], as_index=False).agg(mean=('metrics', 'mean'), std=('metrics', 'std'))
+        fig = px.line(data_frame=df, y='mean', x='ft_data', color='version_class', markers=True)
+        fig.update_layout(
+            xaxis_title = 'Amount of Labeled Data (%)',
+            yaxis_title = f'{metric}',
+            font={"size":15}
+        )
+
+    else:
+        df = df.groupby(['class', 'version'], as_index=False).agg(mean=('metrics', 'mean'), std=('metrics', 'std'))
+        fig = px.bar(data_frame=df, y='mean', x='class', error_y='std', color='version', barmode='group')
+        fig.update_layout(
+            xaxis_title = 'Labels',
+            yaxis_title = f'{metric}',
+            font={"size":15}
+        )
     
     return fig
 
