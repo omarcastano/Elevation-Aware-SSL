@@ -3,9 +3,9 @@ name = "masterthesis"
 version = "0.1.0"
 description = "This is my Master Theses project"
 authors = ["omarcastano <omar.castano@udea.edu.co>"]
-packages = {
+packages = [
     {include = "MasterThesis"}
-}
+]
 
 [tool.poetry.dependencies]
 python = ">=3.7.13, <=3.9"
