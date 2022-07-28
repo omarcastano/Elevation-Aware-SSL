@@ -8,7 +8,7 @@ import os
 from shapely.geometry import Point, Polygon, MultiPolygon
 import matplotlib.patches as mpatches
 import numpy as np
-import MasterThesis.DataPreprocessing as DP
+import MasterThesis.preprocessing as DP
 from shapely.geometry import Polygon
 import seaborn as sns
 from osgeo import osr, gdal, ogr
