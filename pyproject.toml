@@ -1,18 +1,15 @@
 [tool.poetry]
-name = "masterthesis"
+name = "MasterThesis"
 version = "0.1.0"
-description = "This is my Master Theses project"
+description = ""
 authors = ["omarcastano <omar.castano@udea.edu.co>"]
-packages = [
-    {include = "MasterThesis"}
-]
 
 [tool.poetry.dependencies]
-python = ">=3.7.13, <=3.9"
-GDAL = "3.3.0"
+python = "^3.7.13"
+geopandas = "^0.10.2"
 
 [tool.poetry.dev-dependencies]
-jupyterlab = "^3.4.4"
+GDAL = "3.3.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
