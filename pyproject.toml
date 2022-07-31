@@ -12,6 +12,7 @@ python = "^3.7.13"
 geopandas = "^0.10.2"
 earthpy = "^0.9.4"
 wandb = "^0.12.21"
+albumentations = "^1.2.1"
 
 [tool.poetry.dev-dependencies]
 GDAL = "3.3.0"

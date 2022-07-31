@@ -15,7 +15,8 @@ from osgeo import osr, gdal, ogr
 import earthpy as et
 import earthpy.spatial as es
 import earthpy.plot as ep
-from tqdm.autonotebook import tqdm
+from tqdm import tqdm
+import multiprocessing as mp
 
 # Function that reads geotiff
 def read_geotiff_image(path):
@@ -43,6 +44,39 @@ def read_numpy_image(path):
 
     image = np.load(path)
     return image["arr_0"]
+
+
+def load_image_and_labels(img_path, label_path):
+
+    """
+    Load Image and label given the path
+
+    Arguments:
+        img_path: path to image
+        label_path:  path to label
+    """
+
+    img = read_numpy_image(img_path)
+    lbl = read_geotiff_image(label_path)
+
+
+def image_label_sanity_check(metadata, path_to_images, path_to_labels):
+
+    """
+    load all images and labels to verify they exist on the folder
+
+    Arguments:
+       metadata: dataframe with the path to label and images
+       path_to_images: path to the folder where all images are stored
+       path_to_labels: path to the folder where all labels are stored
+
+    """
+
+    with mp.Pool(mp.cpu_count()) as p:
+        p.starmap(
+            load_image_and_labels,
+            zip(path_to_images + metadata.Image, path_to_labels + metadata.Mask),
+        )
 
 
 # Function that plots all bands of a image
