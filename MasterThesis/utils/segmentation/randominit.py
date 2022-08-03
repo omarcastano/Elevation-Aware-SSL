@@ -157,7 +157,7 @@ def train_one_epoch(
     conf_mt = 0
 
     model.train()
-    for epoch, (image, label) in enumerate(train_dataloader, 1):
+    for epoch, (image, label) in enumerate(tqdm(train_dataloader), 1):
 
         images, labels = image.to(device), label.to(device)
 
@@ -223,7 +223,7 @@ def test_one_epoch(
     model.eval()
 
     with torch.no_grad():
-        for epoch, (inputs, labels) in enumerate(test_loader, 1):
+        for epoch, (inputs, labels) in enumerate(tqdm(test_loader), 1):
 
             inputs, labels = inputs.to(device), labels.to(device)
 
