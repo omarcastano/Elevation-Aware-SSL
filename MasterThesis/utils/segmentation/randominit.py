@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 import cv2
+import os
 import albumentations as album
 from MasterThesis import EDA
 import torch
@@ -12,6 +13,12 @@ from torch.utils.data import DataLoader
 from torch.nn import Module
 import torch
 from tqdm import tqdm
+from typing import List, Callable, Union, Tuple
+import matplotlib.patches as mpatches
+from MasterThesis.utils.segmentation import randominit
+from MasterThesis.models import DeepLab
+import wandb
+from sklearn.model_selection import KFold
 
 
 def data_augmentation(image, label, input_size):
@@ -177,7 +184,7 @@ def train_one_epoch(
         conf_mt += metrics.pixel_confusion_matrix(labels, outputs, class_num=3)
 
     schedule.step()
-    running_loss = running_loss / epoch
+    running_loss = np.round(running_loss / epoch, 4)
     scores, logs = metrics.model_evaluation(
         conf_mt, class_name=class_name, dataset_label="Train"
     )
@@ -196,6 +203,7 @@ def test_one_epoch(
 ):
 
     """
+    Evaluate model performance using a test set with different metrics
 
     Arguments:
         train_dataloader: pytorch dataloader with training images and labels
@@ -238,7 +246,7 @@ def test_one_epoch(
             if last_epoch:
                 metrics_by_threshold.metric_evaluation(labels, output_proba)
 
-    running_loss = running_loss / epoch
+    running_loss = np.round(running_loss / epoch, 4)
 
     if last_epoch:
         scores, logs = metrics.model_evaluation(
@@ -254,16 +262,27 @@ def test_one_epoch(
         return scores, logs, None
 
 
-def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10) -> None:
+def visualize_augmented_images(
+    dataset: torch.utils.data.Dataset, n: int = 10, classes_name: List[str] = None
+) -> None:
 
     """
-    Plots augmented images used to train a a segmentation model
+    Plots augmented images used to train a segmentation model
 
-    Argumetns:
+    urgumetns:
+    ----------
         dataset: pytorch dataset which must return the augmneted
                  views of the same image and the image itslef
         n: number of images to plot
+        classes_name: name of each class
     """
+
+    cmap = {
+        i: [np.random.random(), np.random.random(), np.random.random(), 1]
+        for i in range(len(classes_name))
+    }
+    labels_map = {i: name for i, name in enumerate(classes_name)}
+    patches = [mpatches.Patch(color=cmap[i], label=labels_map[i]) for i in cmap]
 
     fig, ax = plt.subplots(3, n, figsize=(32, 10))
 
@@ -284,3 +303,285 @@ def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10) -
         ax[0, i].axis("off")
         ax[1, i].axis("off")
         ax[2, i].axis("off")
+
+        arrayShow = np.array([[cmap[i] for i in j] for j in label.numpy()])
+        ax[2, i].imshow(arrayShow)
+    plt.legend(
+        handles=patches,
+        bbox_to_anchor=(1.05, 1),
+        loc=2,
+        borderaxespad=0.0,
+        markerscale=30,
+        fontsize="large",
+    )
+
+
+# train model
+def train_model(
+    train_loader: DataLoader,
+    test_loader: DataLoader,
+    model: Module,
+    loss_fn,
+    optimizer,
+    schedule,
+    wandb: wandb,
+    wandb_kwargs: dict,
+    metadata_kwargs: dict,
+):
+
+    """
+
+    Arguments:
+    ---------
+        wandb_kwargs: metadata to initialize wandb. Example:
+            wandb_kwargs = {
+                'project':'MasterThesis',
+                'entity':'omar_castano',
+                'hypm':hypm,
+                'name':'RandomInit',
+                'resume':False
+            }
+    """
+
+    # Definte paths to save and load model
+    checkpoint_path = (
+        f"{metadata_kwargs['path_to_save_model']}/checkpoint_{wandb_kwargs['name']}.pt"
+    )
+    model_path = (
+        f"{metadata_kwargs['path_to_save_model']}/model_{wandb_kwargs['name']}.pth"
+    )
+
+    # Create folder to save model
+    if metadata_kwargs["path_to_save_model"]:
+        if not os.path.isdir(metadata_kwargs["path_to_save_model"]):
+            os.mkdir(metadata_kwargs["path_to_save_model"])
+
+    # Initialize WandB
+    with wandb.init(**wandb_kwargs):
+
+        wandb.log(
+            {
+                "Label Distribution": EDA.label_pixel_distributio(
+                    metadata_kwargs["path_to_labels"],
+                    metadata_kwargs["metadata"],
+                    metadata_kwargs["select_classes"],
+                )
+            }
+        )
+
+        if wandb.run.resumed:
+            checkpoint = torch.load(checkpoint_path)
+            model.load_state_dict(checkpoint["model_state_dict"])
+            optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+            epoch = checkpoint["epoch"]
+            train_loss = checkpoint["train_loss"]
+            test_loss = checkpoint["test_loss"]
+
+        epoch = 0
+        train_loss = []
+        test_loss = []
+
+        # Start Training the model
+        while epoch < wandb_kwargs["config"]["epochs"]:
+            print("-------------------------------------------------------------")
+            print(f"Epoch {epoch+1}/{wandb_kwargs['config']['epochs']}")
+
+            _, logs_train = randominit.train_one_epoch(
+                train_loader,
+                model,
+                loss_fn,
+                optimizer,
+                schedule,
+                metadata_kwargs["select_classes"],
+                metadata_kwargs["device"],
+            )
+
+            last_epoch = epoch + 1 == wandb_kwargs["config"]["epochs"]
+            _, logs_test, metrics_by_threshold = randominit.test_one_epoch(
+                test_loader,
+                model,
+                loss_fn,
+                metadata_kwargs["select_classes"],
+                metadata_kwargs["device"],
+                last_epoch,
+            )
+
+            print(f'\n    Train Loss: { logs_train["Train loss"] }')
+            print(f'\n    Test Loss: { logs_test["Test loss"] }')
+
+            train_loss.append(logs_train["Train loss"])
+            test_loss.append(logs_test["Test loss"])
+
+            logs_test.update({"Train loss": logs_train["Train loss"]})
+            wandb.log(logs_test)
+            print("------------------------------------------------------------- \n")
+
+            # Save the model
+            if metadata_kwargs["path_to_save_model"]:
+                torch.save(
+                    {
+                        "epoch": epoch,
+                        "model_state_dict": model.state_dict(),
+                        "optimizer_state_dict": optimizer.state_dict(),
+                        "tarin_loss": train_loss,
+                        "test_loss": test_loss,
+                    },
+                    checkpoint_path,
+                )
+
+                torch.save(model, model_path)
+
+            epoch += 1
+
+        # Create table with the losses
+        loss = pd.DataFrame(
+            {
+                "train_loss": train_loss,
+                "test_loss": test_loss,
+                "epoch": np.array(range(len(train_loss))) + 1,
+            }
+        )
+
+        # Save tables with metrics in wandB
+        wandb.log({"Loss": wandb.Table(dataframe=loss)})
+        metrics_table = wandb.Table(dataframe=metrics_by_threshold.get_table())
+        wandb.log({"Table_Metrics": metrics_table})
+
+
+def run_train(
+    wandb: wandb,
+    wandb_kwargs: dict = None,
+    metadata_kwargs: dict = None,
+):
+
+    if not wandb_kwargs["id"]:
+        run_id = wandb.util.generate_id()
+        print("run_id", run_id)
+
+    # Define dataset
+    ds_train = randominit.CustomDaset(
+        metadata_kwargs["path_to_images"],
+        metadata_kwargs["path_to_labels"],
+        metadata_kwargs["metadata_train"],
+    )
+    ds_test = randominit.CustomDaset(
+        metadata_kwargs["path_to_images"],
+        metadata_kwargs["path_to_labels"],
+        metadata_kwargs["metadata_test"],
+    )
+
+    # define dataloader
+    train_dataloader = torch.utils.data.DataLoader(
+        ds_train,
+        batch_size=wandb_kwargs["config"]["batch_size"],
+        shuffle=True,
+        num_workers=4,
+        drop_last=True,
+    )
+    test_dataloader = torch.utils.data.DataLoader(
+        ds_test, batch_size=32, shuffle=True, num_workers=4, drop_last=True
+    )
+
+    # Instance Deep Lab model
+    deeplab_model = DeepLab(
+        num_classes=wandb_kwargs["config"]["num_classes"],
+        in_channels=wandb_kwargs["config"]["in_channels"],
+        pretrained=False,
+        arch="resnet50",
+        output_stride=16,
+        bn_momentum=wandb_kwargs["config"]["bn_momentum"],
+        freeze_bn=False,
+    )
+    deeplab_model.to(metadata_kwargs["device"])
+
+    # loss function
+    loss = torch.nn.CrossEntropyLoss()
+
+    # Optimizer
+    optimizer = torch.optim.Adam(
+        deeplab_model.parameters(),
+        weight_decay=wandb_kwargs["config"]["weight_decay"],
+        lr=wandb_kwargs["config"]["learning_rate"],
+    )
+
+    # Learning schedule
+    schedule = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
+
+    randominit.train_model(
+        train_dataloader,
+        test_dataloader,
+        deeplab_model,
+        loss,
+        optimizer,
+        schedule,
+        wandb=wandb,
+        wandb_kwargs=wandb_kwargs,
+        metadata_kwargs=metadata_kwargs,
+    )
+
+
+def generate_metadata_train_test_cv(
+    metadata: pd.DataFrame, train_size: float, n_split: int = 5
+) -> Tuple[List[pd.DataFrame], List[pd.DataFrame]]:
+
+    """
+    Provides train/test indices to split data in train/test sets. Split
+    dataset into k consecutive foldsenerate train and test dataset via k-fold sets
+
+
+    Argguments:
+    ----------
+        metadata: dataframe with the path to images and labels
+        train_size: percentage of in each train set
+        n_split: numbers of folds. Must be at least 2
+    """
+
+    n_total_images = metadata.shape[0]
+    n_images_train = int(n_total_images * train_size)
+
+    print(f"Number fo total images : {n_total_images}")
+    print(f"Number of images to train: {n_images_train} ({train_size*100:.3f}%)")
+
+    metadata_train, metadata_test = [], []
+
+    kf = KFold(n_splits=n_split)
+
+    X = np.arange(10)
+    for train, test in kf.split(metadata):
+        metadata_train.append(
+            metadata.iloc[train]
+            .sample(n_images_train, random_state=42)
+            .copy()
+            .reset_index(drop=True)
+        )
+        metadata_test.append(metadata.iloc[test].copy().reset_index(drop=True))
+
+    return metadata_train, metadata_test
+
+
+def generate_metadata_train_test(
+    train_size: float, test_size: float, metadata: pd.DataFrame
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+
+    """
+    Generate a train/test set using via holdout set
+
+    Arguments:
+    ---------
+        train_size: percentage of data for training
+        test_size: percentage of data for test
+        metadata: dataframe with the path to images and labels
+    """
+
+    # total number of images
+    n_total_images = metadata.shape[0]
+    n_images_train = int(n_total_images * train_size)
+    n_images_test = int(n_total_images * test_size)
+
+    # Metadata to train and test
+    metadata_train = metadata.iloc[np.arange(0, n_images_train)].reset_index().copy()
+    metadata_test = metadata.iloc[-np.arange(1, n_images_test + 1)].reset_index().copy()
+
+    assert not np.isin(metadata_train.Image, metadata_test.Image).any()
+
+    return metadata_train, metadata_test
