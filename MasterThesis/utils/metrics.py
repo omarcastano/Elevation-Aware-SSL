@@ -4,6 +4,7 @@ from MasterThesis import EDA
 from sklearn.metrics import confusion_matrix
 import plotly.express as px
 from sklearn.metrics import recall_score, precision_score, f1_score
+from typing import List
 
 ## Confusion matrix
 def pixel_confusion_matrix(y_true, y_pred, class_num):
@@ -195,6 +196,183 @@ class threshold_metric_evaluation:
         return result
 
 
+def lineplot_metrics_from_wandb(
+    wandb,
+    project="MasterThesis",
+    entity="omar_castno",
+    version=["baseline"],
+    train_size=[0.02],
+    metric="F1_score",
+):
+
+    """
+    Returns a linplot where x-axis is the amount of training data and the y-axis
+    is the mean score for a given metric across different runs (corss-validation).
+
+    Argumetns:
+        wandb: wandb module
+        project: wandb project name
+        entity: name of the wandb entity
+        version: identifiers to filter wandb runs. This parametere is used to
+            select the wandb runs that will be use to in the final linplot. This parameter is
+            also used to group and aggregate results.
+        train_size: train size used to train the model. This parametere is used to
+            select the wandb runs that will be use to in the final lineplot
+        metric: one of the follow metrics 'F1_score', 'Recall', 'Precision' or 'Acc_by_Class'
+        line_plot: If true
+    """
+
+    assert metric in [
+        "F1_score",
+        "Recall",
+        "Precision",
+        "Acc_by_Class",
+    ], "The parameter metric must be one of the metrics F1_score, Recall or Precision"
+
+    api = wandb.Api()
+    runs = api.runs(entity + "/" + project)
+
+    summary_runs = []
+    for run in runs:
+        summary = run.summary._json_dict
+        summary.update(run.config)
+        summary.update({"id": run.id})
+        summary_runs.append(summary)
+
+    metric_name = []
+    metric_score = []
+    metric_version = []
+    metric_train_size = []
+
+    for logs in summary_runs:
+        if (logs["version"] in version) and (logs["amount_of_ft_data"] in train_size):
+            for i, j in logs.items():
+                if (f"{metric}" in i) and (
+                    "weighted" not in i.lower() and isinstance(j, float)
+                ):
+                    metric_name.append(i.replace("_" + f"{metric}", ""))
+                    metric_score.append(j)
+                    metric_version.append(logs["version"])
+                    metric_train_size.append(logs["amount_of_ft_data"])
+
+    df = pd.DataFrame(
+        {
+            "metrics": metric_score,
+            "class": metric_name,
+            "version": metric_version,
+            "train_size": np.array(metric_train_size) * 100,
+        }
+    )
+
+    df = df.groupby(["version", "class", "train_size"], as_index=False).agg(
+        mean=("metrics", "mean"), std=("metrics", "std")
+    )
+    fig = px.line(
+        data_frame=df,
+        y="mean",
+        x="train_size",
+        color="class",
+        line_dash="version",
+        markers=True,
+    )
+    fig.update_layout(
+        xaxis_title="Amount of Labeled Data (%)",
+        yaxis_title=f"{metric}",
+        font={"size": 15},
+    )
+
+    return fig
+
+
+def barplot_metrics_from_wandb(
+    wandb,
+    project: str = "MasterThesis",
+    entity: str = "omar_castno",
+    version: List[str] = ["baseline"],
+    train_size: float = 0.02,
+    metric: str = "F1_score",
+    return_table: bool = False,
+):
+
+    """
+    Returns a barplot with the mean score for a given metric across several runs.
+
+    Argumetns:
+        wandb: wandb module
+        project: wandb project name
+        entity: name of the wandb entity
+        version: identifiers to filter wandb runs. This parametere is used to
+            select the wandb runs that will be use to in the final barplot. This parameter is
+            also used to group and aggregate results.
+        train_size: train size used to train the model. This parametere is used to
+            select the wandb runs that will be use to in the final barplot
+        metric: one of the follow metrics 'F1_score', 'Recall', 'Precision' or 'Acc_by_Class'
+        return_table: If true returns the table used in the barplot
+    """
+
+    assert metric in [
+        "F1_score",
+        "Recall",
+        "Precision",
+        "Acc_by_Class",
+    ], "The parameter metric must be one of the metrics F1_score, Recall or Precision"
+
+    api = wandb.Api()
+    runs = api.runs(entity + "/" + project)
+
+    summary_runs = []
+    for run in runs:
+        summary = run.summary._json_dict
+        summary.update(run.config)
+        summary.update({"id": run.id})
+        summary_runs.append(summary)
+
+    metric_name = []
+    metric_score = []
+    metric_version = []
+    metric_train_size = []
+
+    for logs in summary_runs:
+        if (logs["version"] in version) and (logs["amount_of_ft_data"] == train_size):
+            for i, j in logs.items():
+                if (f"{metric}" in i) and (
+                    "weighted" not in i.lower() and isinstance(j, float)
+                ):
+                    metric_name.append(i.replace("_" + f"{metric}", ""))
+                    metric_score.append(j)
+                    metric_version.append(logs["version"])
+                    metric_train_size.append(logs["amount_of_ft_data"])
+
+    df = pd.DataFrame(
+        {
+            "metrics": metric_score,
+            "class": metric_name,
+            "version": metric_version,
+            "train_size": np.array(metric_train_size) * 100,
+        }
+    )
+
+    df = df.groupby(["class", "version"], as_index=False).agg(
+        mean=("metrics", "mean"), std=("metrics", "std")
+    )
+
+    fig = px.bar(
+        data_frame=df,
+        y="mean",
+        x="class",
+        error_y="std",
+        color="version",
+        barmode="group",
+    )
+
+    fig.update_layout(xaxis_title="Labels", yaxis_title=f"{metric}", font={"size": 15})
+
+    if return_table:
+        return (fig,)
+
+    return fig
+
+
 def model_evaluation(conf_mt, class_name, dataset_label="Test"):
 
     """
@@ -349,10 +527,11 @@ def plot_metrics_from_logs(logs, metric="F1_score"):
     Helper function to plot metrics from wandb logs
 
     Argumetns:
+    ----------
         logs: dict
             WandB dictionary with logs
         metric: str:
-            on of the follow metrics 'F1_score', 'Recall',
+            one of the follow metrics 'F1_score', 'Recall',
             'Precision' or 'Acc_by_Class'
     """
 
@@ -373,107 +552,6 @@ def plot_metrics_from_logs(logs, metric="F1_score"):
 
     fig = px.bar(x=metric_name, y=metric_score)
     fig.update_layout(xaxis_title="Labels", yaxis_title=f"{metric}", font={"size": 15})
-
-    return fig
-
-
-def plot_metrics_from_wandb(
-    wandb,
-    project="MasterThesis",
-    entity="omar_castno",
-    version=["baseline"],
-    ft_data=[0.02],
-    metric="F1_score",
-    summary_plot=False,
-):
-
-    """
-    Helper function to plot metrics from several runs stored in wandb
-
-    Argumetns:
-        wandb: wandb module
-        project: str
-            wandb project name
-        entity: str
-            name of the wandb entity
-        version: list[str]
-            identifier to filter wandb runs
-        metric: str
-            on of the follow metrics 'F1_score', 'Recall',
-            'Precision' or 'Acc_by_Class'
-    """
-
-    assert metric in [
-        "F1_score",
-        "Recall",
-        "Precision",
-        "Acc_by_Class",
-    ], "The parameter metric must be one of the metrics F1_score, Recall or Precision"
-
-    api = wandb.Api()
-    runs = api.runs(entity + "/" + project)
-
-    summary_runs = []
-    for run in runs:
-        summary = run.summary._json_dict
-        summary.update(run.config)
-        summary.update({"id": run.id})
-        summary_runs.append(summary)
-
-    metric_name = []
-    metric_score = []
-    metric_version = []
-    metric_ft_data = []
-
-    for logs in summary_runs:
-        if (logs["version"] in version) and (logs["amount_of_ft_data"] in ft_data):
-            for i, j in logs.items():
-                if (f"{metric}" in i) and (
-                    "weighted" not in i.lower() and (type(j) == float)
-                ):
-                    metric_name.append(i.replace("_" + f"{metric}", ""))
-                    metric_score.append(j)
-                    metric_version.append(logs["version"])
-                    metric_ft_data.append(logs["amount_of_ft_data"])
-
-    df = pd.DataFrame(
-        {
-            "metrics": metric_score,
-            "class": metric_name,
-            "version": metric_version,
-            "ft_data": np.array(metric_ft_data) * 100,
-        }
-    )
-    df["version_class"] = df["class"] + "_" + df["version"]
-
-    if summary_plot:
-        df = df.groupby(["version_class", "ft_data"], as_index=False).agg(
-            mean=("metrics", "mean"), std=("metrics", "std")
-        )
-        fig = px.line(
-            data_frame=df, y="mean", x="ft_data", color="version_class", markers=True
-        )
-        fig.update_layout(
-            xaxis_title="Amount of Labeled Data (%)",
-            yaxis_title=f"{metric}",
-            font={"size": 15},
-        )
-
-    else:
-        df = df.groupby(["class", "version"], as_index=False).agg(
-            mean=("metrics", "mean"), std=("metrics", "std")
-        )
-        fig = px.bar(
-            data_frame=df,
-            y="mean",
-            x="class",
-            error_y="std",
-            color="version",
-            barmode="group",
-        )
-        fig.update_layout(
-            xaxis_title="Labels", yaxis_title=f"{metric}", font={"size": 15}
-        )
 
     return fig
 
