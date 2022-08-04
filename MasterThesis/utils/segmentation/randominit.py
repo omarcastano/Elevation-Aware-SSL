@@ -19,6 +19,7 @@ from MasterThesis.utils.segmentation import randominit
 from MasterThesis.models import DeepLab
 import wandb
 from sklearn.model_selection import KFold
+from MasterThesis.utils import metrics
 
 
 def data_augmentation(image, label, input_size):
@@ -127,6 +128,60 @@ class CustomDaset(torch.utils.data.Dataset):
             return original_image, image, label
 
         return image, label
+
+
+def visualize_augmented_images(
+    dataset: torch.utils.data.Dataset, n: int = 10, classes_name: List[str] = None
+) -> None:
+
+    """
+    Plots augmented images used to train a segmentation model
+
+    urgumetns:
+    ----------
+        dataset: pytorch dataset which must return the augmneted
+                 views of the same image and the image itslef
+        n: number of images to plot
+        classes_name: name of each class
+    """
+
+    cmap = {
+        i: [np.random.random(), np.random.random(), np.random.random(), 1]
+        for i in range(len(classes_name))
+    }
+    labels_map = {i: name for i, name in enumerate(classes_name)}
+    patches = [mpatches.Patch(color=cmap[i], label=labels_map[i]) for i in cmap]
+
+    fig, ax = plt.subplots(3, n, figsize=(32, 10))
+
+    for i in range(n):
+        original, augmented, label = dataset[i]
+
+        augmented = augmented.transpose(1, 2, 0)
+        original = original.transpose(1, 2, 0)
+
+        ax[2, i].imshow(label)
+        ax[1, i].imshow(augmented + 0.1)
+        ax[0, i].imshow(original + 0.1)
+
+        ax[0, i].set_title("Originale")
+        ax[1, i].set_title("Augmented")
+        ax[2, i].set_title("Label")
+
+        ax[0, i].axis("off")
+        ax[1, i].axis("off")
+        ax[2, i].axis("off")
+
+        arrayShow = np.array([[cmap[i] for i in j] for j in label.numpy()])
+        ax[2, i].imshow(arrayShow)
+    plt.legend(
+        handles=patches,
+        bbox_to_anchor=(1.05, 1),
+        loc=2,
+        borderaxespad=0.0,
+        markerscale=30,
+        fontsize="large",
+    )
 
 
 # define training one epoch
@@ -254,66 +309,13 @@ def test_one_epoch(
         )
         logs.update({"Test loss": running_loss})
         return scores, logs, metrics_by_threshold
+
     else:
         scores, logs = metrics.model_evaluation(
             conf_mt, class_name=class_name, dataset_label="Test"
         )
         logs.update({"Test loss": running_loss})
         return scores, logs, None
-
-
-def visualize_augmented_images(
-    dataset: torch.utils.data.Dataset, n: int = 10, classes_name: List[str] = None
-) -> None:
-
-    """
-    Plots augmented images used to train a segmentation model
-
-    urgumetns:
-    ----------
-        dataset: pytorch dataset which must return the augmneted
-                 views of the same image and the image itslef
-        n: number of images to plot
-        classes_name: name of each class
-    """
-
-    cmap = {
-        i: [np.random.random(), np.random.random(), np.random.random(), 1]
-        for i in range(len(classes_name))
-    }
-    labels_map = {i: name for i, name in enumerate(classes_name)}
-    patches = [mpatches.Patch(color=cmap[i], label=labels_map[i]) for i in cmap]
-
-    fig, ax = plt.subplots(3, n, figsize=(32, 10))
-
-    for i in range(n):
-        original, augmented, label = dataset[i]
-
-        augmented = augmented.transpose(1, 2, 0)
-        original = original.transpose(1, 2, 0)
-
-        ax[2, i].imshow(label)
-        ax[1, i].imshow(augmented + 0.1)
-        ax[0, i].imshow(original + 0.1)
-
-        ax[0, i].set_title("Originale")
-        ax[1, i].set_title("Augmented")
-        ax[2, i].set_title("Label")
-
-        ax[0, i].axis("off")
-        ax[1, i].axis("off")
-        ax[2, i].axis("off")
-
-        arrayShow = np.array([[cmap[i] for i in j] for j in label.numpy()])
-        ax[2, i].imshow(arrayShow)
-    plt.legend(
-        handles=patches,
-        bbox_to_anchor=(1.05, 1),
-        loc=2,
-        borderaxespad=0.0,
-        markerscale=30,
-        fontsize="large",
-    )
 
 
 # train model
@@ -330,6 +332,7 @@ def train_model(
 ):
 
     """
+    Train a semantic segmentation model from scratches
 
     Arguments:
     ---------
@@ -446,6 +449,41 @@ def train_model(
         wandb.log({"Loss": wandb.Table(dataframe=loss)})
         metrics_table = wandb.Table(dataframe=metrics_by_threshold.get_table())
         wandb.log({"Table_Metrics": metrics_table})
+
+        wandb.log(
+            {
+                "Per Class Accuracy": metrics.plot_metrics_from_logs(
+                    logs_test, metric="Acc_by_Class"
+                )
+            }
+        )
+        wandb.log(
+            {"Recall": metrics.plot_metrics_from_logs(logs_test, metric="Recall")}
+        )
+        wandb.log(
+            {"F1 Score": metrics.plot_metrics_from_logs(logs_test, metric="F1_score")}
+        )
+        wandb.log(
+            {"Precision": metrics.plot_metrics_from_logs(logs_test, metric="Precision")}
+        )
+        wandb.log({"Precision Recall Curve": metrics_by_threshold.plot_PR_curve()})
+        wandb.log(
+            {
+                "Precision by Threshold": metrics_by_threshold.get_bar_plot(
+                    metric="precision"
+                )
+            }
+        )
+        wandb.log(
+            {"Recall by Thresholds": metrics_by_threshold.get_bar_plot(metric="recall")}
+        )
+        wandb.log(
+            {
+                "F1_Score by Threshold": metrics_by_threshold.get_bar_plot(
+                    metric="f1_score"
+                )
+            }
+        )
 
 
 def run_train(
