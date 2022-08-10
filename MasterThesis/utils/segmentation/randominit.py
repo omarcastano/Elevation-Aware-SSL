@@ -1,25 +1,22 @@
 # import libraries
 import numpy as np
 import pandas as pd
-import cv2
 import os
 import albumentations as album
 from MasterThesis import EDA
 import torch
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix
-from MasterThesis.utils import metrics
 from torch.utils.data import DataLoader
 from torch.nn import Module
 import torch
 from tqdm import tqdm
-from typing import List, Callable, Union, Tuple
+from typing import List, Union, Tuple
 import matplotlib.patches as mpatches
 from MasterThesis.utils.segmentation import randominit
 from MasterThesis.models import DeepLab
 import wandb
 from sklearn.model_selection import KFold
-from MasterThesis.utils import metrics
+from . import metrics
 
 
 def data_augmentation(image, label, input_size):
@@ -318,6 +315,73 @@ def test_one_epoch(
         return scores, logs, None
 
 
+def generate_metadata_train_test_cv(
+    metadata: pd.DataFrame, train_size: float, n_split: int = 5
+) -> Tuple[List[pd.DataFrame], List[pd.DataFrame]]:
+
+    """
+    Provides train/test indices to split data in train/test sets. Split
+    dataset into k consecutive foldsenerate train and test dataset via k-fold sets
+
+
+    Argguments:
+    ----------
+        metadata: dataframe with the path to images and labels
+        train_size: percentage of in each train set
+        n_split: numbers of folds. Must be at least 2
+    """
+
+    n_total_images = metadata.shape[0]
+    n_images_train = int(n_total_images * train_size)
+
+    print(f"Number fo total images : {n_total_images}")
+    print(f"Number of images to train: {n_images_train} ({train_size*100:.3f}%)")
+
+    metadata_train, metadata_test = [], []
+
+    kf = KFold(n_splits=n_split)
+
+    X = np.arange(10)
+    for train, test in kf.split(metadata):
+        metadata_train.append(
+            metadata.iloc[train]
+            .sample(n_images_train, random_state=42)
+            .copy()
+            .reset_index(drop=True)
+        )
+        metadata_test.append(metadata.iloc[test].copy().reset_index(drop=True))
+
+    return metadata_train, metadata_test
+
+
+def generate_metadata_train_test(
+    train_size: float, test_size: float, metadata: pd.DataFrame
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+
+    """
+    Generate a train/test set using via holdout set
+
+    Arguments:
+    ---------
+        train_size: percentage of data for training
+        test_size: percentage of data for test
+        metadata: dataframe with the path to images and labels
+    """
+
+    # total number of images
+    n_total_images = metadata.shape[0]
+    n_images_train = int(n_total_images * train_size)
+    n_images_test = int(n_total_images * test_size)
+
+    # Metadata to train and test
+    metadata_train = metadata.iloc[np.arange(0, n_images_train)].reset_index().copy()
+    metadata_test = metadata.iloc[-np.arange(1, n_images_test + 1)].reset_index().copy()
+
+    assert not np.isin(metadata_train.Image, metadata_test.Image).any()
+
+    return metadata_train, metadata_test
+
+
 # train model
 def train_model(
     train_loader: DataLoader,
@@ -332,17 +396,49 @@ def train_model(
 ):
 
     """
-    Train a semantic segmentation model from scratches
+    Train a semantic segmentation model
 
     Arguments:
     ---------
-        wandb_kwargs: metadata to initialize wandb. Example:
+        metadata_kwargs: metadata required to train the model. Example:
+            metadata_kwargs = {
+                "path_to_labels": path_to_label,
+                "path_to_images": path_to_images,
+                "path_to_save_model": None,  # Path to save the model that is being trained (do not include the extension .pt or .pth)
+                "path_to_load_model": None,  # Path to load a model from a checkpoint (useful to handle notebook disconection)
+                "path_to_load_backbone": None,  # Path to load a pre-trained backbone using ssl
+                "metadata": metadata,
+                "metadata_train": metadata_train[0],
+                "metadata_test": metadata_test[0],
+                "select_classes": select_classes,
+                "device": device,
+            }
+
+        wandb_kwargs: parameteres to initialize wandb runs. Example:
             wandb_kwargs = {
-                'project':'MasterThesis',
-                'entity':'omar_castano',
-                'hypm':hypm,
-                'name':'RandomInit',
-                'resume':False
+                "project": "RandomInit",
+                "entity": "omar_castano",
+                "config": hypm,
+                "id": None,
+                "name": "RandomInit",
+                "resume": False,
+            }
+
+            Example of hyperparameteres expected:
+            hypm = {
+                "version": "version",
+                "pretrained": "SimCLR", # SSL methodology. If not None path_to_load_backbone must be provided
+                "fine_tune": True, # wheter or not to fine tune the the whole model (including the pre-trained backbone)
+                "ft_epoch": 100, # epoch from which the frozen backbone will be unfreez
+                "amount_of_ft_data": train_size,
+                "bn_momentum": 0.9,
+                "input_shape": [100, 100],
+                "num_classes": 3,
+                "in_channels": 3,
+                "weight_decay": 0.0005,
+                "learning_rate": 1e-3,
+                "batch_size": 16,
+                "epochs": 2,
             }
     """
 
@@ -352,6 +448,9 @@ def train_model(
     )
     model_path = (
         f"{metadata_kwargs['path_to_save_model']}/model_{wandb_kwargs['name']}.pth"
+    )
+    checkpoint_load_path = (
+        f"{metadata_kwargs['path_to_load_model']}/checkpoint_{wandb_kwargs['name']}.pt"
     )
 
     # Create folder to save model
@@ -372,15 +471,16 @@ def train_model(
             }
         )
 
-        if wandb.run.resumed:
-            checkpoint = torch.load(checkpoint_path)
+        epoch = 0
+
+        if metadata_kwargs["path_to_load_model"]:
+            checkpoint = torch.load(checkpoint_load_path)
             model.load_state_dict(checkpoint["model_state_dict"])
             optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
             epoch = checkpoint["epoch"]
             train_loss = checkpoint["train_loss"]
             test_loss = checkpoint["test_loss"]
 
-        epoch = 0
         train_loss = []
         test_loss = []
 
@@ -418,6 +518,16 @@ def train_model(
             logs_test.update({"Train loss": logs_train["Train loss"]})
             wandb.log(logs_test)
             print("------------------------------------------------------------- \n")
+
+            if wandb_kwargs["config"]["fine_tune"] and (
+                wandb_kwargs["config"]["ft_epoch"] == epoch
+            ):
+
+                for parameters in model.backbone.parameters():
+                    parameters.requires_grad = True
+
+                for parameters in model.encoder.parameters():
+                    parameters.requires_grad = True
 
             # Save the model
             if metadata_kwargs["path_to_save_model"]:
@@ -486,11 +596,61 @@ def train_model(
         )
 
 
+##Run a experiment
 def run_train(
     wandb: wandb,
     wandb_kwargs: dict = None,
     metadata_kwargs: dict = None,
 ):
+
+    """
+    Run a experiment where a DeepLabv3+ model is trained using resnet50 as backbone. A pre-trained
+    encoder can be loaded and finetune during the training.
+
+
+    Arguments:
+    ---------
+        metadata_kwargs: metadata required to train the model. Example:
+            metadata_kwargs = {
+                "path_to_labels": #Path to labels
+                "path_to_images": # Path to images
+                "path_to_save_model": None,  # Path to save the model that is being trained
+                "path_to_load_model": None,  # Path to load a model from a checkpoint (useful to handle notebook disconection)
+                "path_to_load_backbone": None,  # Path to load a pre-trained backbone using ssl
+                "metadata": # Dataframe with metadata to load images and labels
+                "metadata_train": # Dataframe with metadata to load images and labels
+                "metadata_test": # Dataframe with metadata to load images and labels
+                "select_classes": # List with the unique classes
+                "device": # device to train  de DeepLearning model
+            }
+
+        wandb_kwargs: parameteres to initialize wandb runs. Example:
+            wandb_kwargs = {
+                "project": "RandomInit",
+                "entity": "omar_castano",
+                "config": hypm,
+                "id": None,
+                "name": "RandomInit", # This parameter is used to identify the saved model
+                "resume": False,
+            }
+
+            Example of hyperparameteres expected:
+            hypm = {
+                "version": "version",
+                "pretrained": "SimCLR", # SSL methodology. If not None path_to_load_backbone must be provided
+                "fine_tune": True, # wheter or not to fine tune the the whole model (including the pre-trained backbone)
+                "ft_epoch": 100, # epoch from which the frozen backbone will be unfreez
+                "amount_of_ft_data": train_size,
+                "bn_momentum": 0.9,
+                "input_shape": [100, 100],
+                "num_classes": 3, # Hyperparameter of deepla model
+                "in_channels": 3, # Hyperparameter of deepla model
+                "weight_decay": 0.0005, # Hyperparameter of Adam optimizer
+                "learning_rate": 1e-3, # Hyperparameter of Adam optimizer
+                "batch_size": 16,  # Hyperparameter of deepla model
+                "epochs": 2,  # Hyperparameter of deepla model
+            }
+    """
 
     if not wandb_kwargs["id"]:
         run_id = wandb.util.generate_id()
@@ -532,6 +692,22 @@ def run_train(
     )
     deeplab_model.to(metadata_kwargs["device"])
 
+    if wandb_kwargs["config"]["pretrained"]:
+        deeplab_model.backbone.load_state_dict(
+            torch.load(metadata_kwargs["path_to_load_backbone"]).backbone.state_dict()
+        )
+        deeplab_model.encoder.load_state_dict(
+            torch.load(metadata_kwargs["path_to_load_backbone"]).encoder.state_dict()
+        )
+
+        for parameters in deeplab_model.backbone.parameters():
+            parameters.requires_grad = False
+
+        for parameters in deeplab_model.encoder.parameters():
+            parameters.requires_grad = False
+
+        deeplab_model.to(metadata_kwargs["device"])
+
     # loss function
     loss = torch.nn.CrossEntropyLoss()
 
@@ -556,70 +732,3 @@ def run_train(
         wandb_kwargs=wandb_kwargs,
         metadata_kwargs=metadata_kwargs,
     )
-
-
-def generate_metadata_train_test_cv(
-    metadata: pd.DataFrame, train_size: float, n_split: int = 5
-) -> Tuple[List[pd.DataFrame], List[pd.DataFrame]]:
-
-    """
-    Provides train/test indices to split data in train/test sets. Split
-    dataset into k consecutive foldsenerate train and test dataset via k-fold sets
-
-
-    Argguments:
-    ----------
-        metadata: dataframe with the path to images and labels
-        train_size: percentage of in each train set
-        n_split: numbers of folds. Must be at least 2
-    """
-
-    n_total_images = metadata.shape[0]
-    n_images_train = int(n_total_images * train_size)
-
-    print(f"Number fo total images : {n_total_images}")
-    print(f"Number of images to train: {n_images_train} ({train_size*100:.3f}%)")
-
-    metadata_train, metadata_test = [], []
-
-    kf = KFold(n_splits=n_split)
-
-    X = np.arange(10)
-    for train, test in kf.split(metadata):
-        metadata_train.append(
-            metadata.iloc[train]
-            .sample(n_images_train, random_state=42)
-            .copy()
-            .reset_index(drop=True)
-        )
-        metadata_test.append(metadata.iloc[test].copy().reset_index(drop=True))
-
-    return metadata_train, metadata_test
-
-
-def generate_metadata_train_test(
-    train_size: float, test_size: float, metadata: pd.DataFrame
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
-
-    """
-    Generate a train/test set using via holdout set
-
-    Arguments:
-    ---------
-        train_size: percentage of data for training
-        test_size: percentage of data for test
-        metadata: dataframe with the path to images and labels
-    """
-
-    # total number of images
-    n_total_images = metadata.shape[0]
-    n_images_train = int(n_total_images * train_size)
-    n_images_test = int(n_total_images * test_size)
-
-    # Metadata to train and test
-    metadata_train = metadata.iloc[np.arange(0, n_images_train)].reset_index().copy()
-    metadata_test = metadata.iloc[-np.arange(1, n_images_test + 1)].reset_index().copy()
-
-    assert not np.isin(metadata_train.Image, metadata_test.Image).any()
-
-    return metadata_train, metadata_test
