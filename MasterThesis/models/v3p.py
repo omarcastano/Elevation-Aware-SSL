@@ -1,16 +1,8 @@
-# -*- coding: utf-8 -*-
-# @Time    : 2018/9/19 17:30
-# @Author  : HLin
-# @Email   : linhua2017@ia.ac.cn
-# @File    : decoder.py
-# @Software: PyCharm
-
-# import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from MasterThesis.models.deeplab_utils import ResNet
-from MasterThesis.models.deeplab_utils.sync_batchnorm.batchnorm import (
+from .deeplab_utils import ResNet
+from .deeplab_utils.sync_batchnorm.batchnorm import (
     SynchronizedBatchNorm2d,
 )
 from MasterThesis.models.deeplab_utils.encoder import Encoder
