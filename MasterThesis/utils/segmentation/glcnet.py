@@ -569,7 +569,7 @@ def run_train(
 
     ds_test = CustomDaset(
         metadata_kwargs["path_to_images"],
-        metadata_kwargs["metadata_train"],
+        metadata_kwargs["metadata_test"],
         wandb_kwargs["config"]["patch_size"],
         wandb_kwargs["config"]["patch_num"],
     )
