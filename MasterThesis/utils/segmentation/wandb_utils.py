@@ -183,7 +183,7 @@ def barplot_metrics_from_wandb(
     fig.update_layout(xaxis_title="Labels", yaxis_title=f"{metric}", font={"size": 15})
 
     if return_table:
-        return (fig,)
+        return df
 
     return fig
 
