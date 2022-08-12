@@ -612,7 +612,7 @@ def run_train(
             gpu=metadata_kwargs["device"],
             tau=wandb_kwargs["config"]["temperature"],
             cos_sim=True,
-            use_gpu=False,
+            use_gpu=(metadata_kwargs["device"].type == "gpu"),
         ),
         contrast_loss.NTXentLoss(
             bs=wandb_kwargs["config"]["batch_size"]
