@@ -708,7 +708,9 @@ def run_train(
 
         deeplab_model.to(metadata_kwargs["device"])
 
+        print("\n --------------------------------------")
         print("The backbone was transfered successfully")
+        print("----------------------------------------\n")
 
     # loss function
     loss = torch.nn.CrossEntropyLoss()
