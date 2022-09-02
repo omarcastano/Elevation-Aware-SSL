@@ -14,7 +14,7 @@ from torch.nn import Module
 import torch
 from torch import optim
 import wandb
-from MasterThesis.models import glcnet
+from MasterThesis.MasterThesis.models.segmentation import glcnet
 from MasterThesis.utils.segmentation import contrast_loss
 
 
@@ -178,8 +178,8 @@ class CustomDaset(torch.utils.data.Dataset):
             patch_size: size of the patches to use in the local matching contrastive moduel
             patch_num: number of patches to use in the local matching contrastive moduel
             return_original: If True also return the original image,
-                so the output will be (original, augmented, label), else
-                the output will ve (augmented label)
+                so the output will be (original, augmented1, augmented2), else
+                the output will ve (augmented1, augmented2)
         """
 
         super().__init__()

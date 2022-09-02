@@ -13,7 +13,7 @@ from tqdm import tqdm
 from typing import List, Union, Tuple
 import matplotlib.patches as mpatches
 from MasterThesis.utils.segmentation import randominit
-from MasterThesis.models import DeepLab
+from MasterThesis.MasterThesis.models.segmentation import DeepLab
 import wandb
 from sklearn.model_selection import KFold
 from . import metrics

@@ -22,7 +22,6 @@ def get_pos_and_neg_mask(bs):
         dim=1,
     )
     neg_mask = _get_correlated_mask(bs)
-    # (torch.ones(2*bs, 2*bs, dtype=torch.uint8) - torch.eye(2*bs, dtype=torch.uint8))
     pos_mask = mask_type_transfer(pos_mask)
     neg_mask = mask_type_transfer(neg_mask)
     return pos_mask, neg_mask
@@ -33,8 +32,8 @@ def _get_correlated_mask(batch_size):
     l1 = np.eye((2 * batch_size), 2 * batch_size, k=-batch_size)
     l2 = np.eye((2 * batch_size), 2 * batch_size, k=batch_size)
     mask = torch.from_numpy((diag + l1 + l2))
-    mask = 1 - mask  # .byte()#.type(torch)
-    return mask  # .to(self.device)
+    mask = 1 - mask
+    return mask
 
 
 class NTXentLoss(nn.Module):

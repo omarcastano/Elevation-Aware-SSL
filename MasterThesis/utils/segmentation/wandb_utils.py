@@ -165,10 +165,17 @@ def barplot_metrics_from_wandb(
         .assign(train_size=lambda x: x["train_size"] + "%")
     )
 
-    color = "train_size" if len(version) == 1 else "version"
+    if len(version) > 1 and len(train_size) == 1:
+        color = "version"
+    elif len(version) == 1 and len(train_size) > 1:
+        color = "train_size"
+    else:
+        color = "version_train_size"
 
-    df = df.groupby(["class", color], as_index=False).agg(
-        mean=("metrics", "mean"), std=("metrics", "std")
+    df = (
+        df.groupby(["class", "version", "train_size"], as_index=False)
+        .agg(mean=("metrics", "mean"), std=("metrics", "std"))
+        .assign(version_train_size=lambda x: x.version + "-" + x.train_size)
     )
 
     fig = px.bar(
