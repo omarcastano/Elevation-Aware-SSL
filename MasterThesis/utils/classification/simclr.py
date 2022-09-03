@@ -1,12 +1,13 @@
 # import libraries
 import cv2
+import os
 import torch
 import wandb
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
-import albumentations as album
+import albumentations as albums
 from MasterThesis import EDA
 from tqdm import tqdm
 from torch.nn import Module
@@ -17,7 +18,7 @@ from MasterThesis.models.classification.simclr import SimCLR
 from MasterThesis.utils.classification.losses import NTXentLoss
 from pl_bolts.optimizers import LARS
 
-
+# Data loader
 def data_augmentation(img):
 
     """
