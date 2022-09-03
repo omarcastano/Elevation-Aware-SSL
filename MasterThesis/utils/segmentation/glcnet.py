@@ -364,7 +364,7 @@ def test_one_epoch(
 
             running_loss += loss
 
-        running_loss = running_loss / epoch
+    running_loss = running_loss / epoch
 
     return running_loss.item()
 
