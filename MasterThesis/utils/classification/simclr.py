@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
-import albumentations as albums
+import albumentations as album
 from MasterThesis import EDA
 from tqdm import tqdm
 from torch.nn import Module
