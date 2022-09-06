@@ -450,7 +450,7 @@ def train_model(
                     parameters.requires_grad = True
 
                 for g in optimizer.param_groups:
-                    g["lr"] = 0.001
+                    g["lr"] = 0.00005
 
             # Save the model
             if metadata_kwargs["path_to_save_model"]:
@@ -601,7 +601,7 @@ def run_train(
     )
 
     # Instance Deep Lab model
-    clf_model = LinearClassifier(
+    clf_model = NoneLinearClassifier(
         num_classes=wandb_kwargs["config"]["num_classes"],
         backbone="resnet50",
     )
