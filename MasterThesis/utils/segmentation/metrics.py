@@ -65,8 +65,6 @@ def per_class_accuracy(conf_mt):
             predicted class labels
     """
 
-    acc = lambda tn, fp, fn, tp: (tp + tn) / (tp + fp + tn + fn + 10e-8)
-
     acc_by_class = []
 
     for y in range(conf_mt.shape[0]):
@@ -119,7 +117,7 @@ class threshold_metric_evaluation:
                 )
 
                 precision = precision_score(
-                    (y_true == y) * 1, y_pred, pos_label=1, zero_division=0
+                    (y_true == y) * 1, y_pred, pos_label=1, zero_division=1
                 )
 
                 f1 = f1_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=0)

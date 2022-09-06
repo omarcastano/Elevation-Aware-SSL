@@ -355,7 +355,6 @@ def visualize_images_and_masks(
     path_to_label,
     path_to_images,
     metadata,
-    rgb_band=[0, 1, 2],
     temporal_dim=True,
     n=5,
     figsize=(10, 5),
@@ -373,8 +372,6 @@ def visualize_images_and_masks(
             path to imags
         metadata: data frame
             dataframe with the name of each image and label
-        rgb_band: list, default [0,1,2]
-            python list which indicates the RGB bands
         temporal_dim: bool. default True
             wether images have temporal dimension or not.
             if images have temporal dimension, the must have the

@@ -12,14 +12,19 @@ import torch
 from tqdm import tqdm
 from typing import List, Union, Tuple
 import matplotlib.patches as mpatches
-from MasterThesis.utils.segmentation import randominit
-from MasterThesis.MasterThesis.models.segmentation import DeepLab
 import wandb
 from sklearn.model_selection import KFold
 from . import metrics
+from sklearn.metrics import confusion_matrix
+from MasterThesis.utils.classification import metrics
+from MasterThesis.utils.classification.metrics import threshold_metric_evaluation
+from MasterThesis.models.classification.randominit import (
+    LinearClassifier,
+    NoneLinearClassifier,
+)
 
 
-def data_augmentation(image, label, input_size):
+def data_augmentation(image, input_size):
 
     """
     Data augmentation such as vertical and horizontal flip,
@@ -28,8 +33,6 @@ def data_augmentation(image, label, input_size):
     Argumetns:
         image: 3D numpy array
             input image with shape (H,W,C)
-        label: 1D numpy array
-            labels with shape (H,W)
         input_size: list [H,W].
             python list with the width and heigth
             of the output images and labels.
@@ -45,22 +48,18 @@ def data_augmentation(image, label, input_size):
                 min_max_height=(80, 85),
                 height=input_size[0],
                 width=input_size[1],
-                p=1.0,
-            ),
-            album.HueSaturationValue(
-                hue_shift_limit=0.4,
-                sat_shift_limit=(-0.04, 0.1),
-                val_shift_limit=0.08,
                 p=0.5,
             ),
+            album.ToGray(always_apply=False, p=0.1),
+            album.GaussianBlur(blur_limit=(1, 3), p=0.5),
         ]
     )
 
-    augmented = aug(image=image, mask=label)
+    augmented = aug(image=image)
 
-    image, label = augmented["image"], augmented["mask"]
+    image = augmented["image"]
 
-    return image, label
+    return image
 
 
 class CustomDaset(torch.utils.data.Dataset):
@@ -72,7 +71,6 @@ class CustomDaset(torch.utils.data.Dataset):
     def __init__(
         self,
         path_to_images: str,
-        path_to_labels: str,
         metadata: pd.DataFrame,
         return_original: bool = False,
     ):
@@ -91,7 +89,6 @@ class CustomDaset(torch.utils.data.Dataset):
         super().__init__()
         self.metadata = metadata
         self.path_to_images = path_to_images
-        self.path_to_labels = path_to_labels
         self.return_original = return_original
 
     def __len__(self):
@@ -101,7 +98,9 @@ class CustomDaset(torch.utils.data.Dataset):
     def __getitem__(self, index):
 
         # Load and transform input image
-        image = EDA.read_numpy_image(self.path_to_images + self.metadata.Image[index])
+        image = EDA.read_numpy_image(
+            self.path_to_images + self.metadata.Image.tolist()[index]
+        )
 
         if len(image.shape) == 4:
             image = EDA.less_cloudy_image(image)
@@ -111,13 +110,13 @@ class CustomDaset(torch.utils.data.Dataset):
         image = image.transpose(1, 2, 0).astype(np.float32)
 
         # Load label
-        label = EDA.read_geotiff_image(self.path_to_labels + self.metadata.Mask[index])
+        label = self.metadata.Labels.tolist()[index]
 
         # Data Augmentation
-        image, label = data_augmentation(image, label, input_size=[100, 100])
+        image = data_augmentation(image, input_size=[100, 100])
 
         # Set data types compatible with pytorch
-        label = torch.from_numpy(label).long()
+        # label = torch.from_numpy(label).long()
         image = image.astype(np.float32).transpose(2, 0, 1)
 
         if self.return_original:
@@ -149,7 +148,7 @@ def visualize_augmented_images(
     labels_map = {i: name for i, name in enumerate(classes_name)}
     patches = [mpatches.Patch(color=cmap[i], label=labels_map[i]) for i in cmap]
 
-    fig, ax = plt.subplots(3, n, figsize=(32, 10))
+    fig, ax = plt.subplots(2, n, figsize=(32, 7))
 
     for i in range(n):
         original, augmented, label = dataset[i]
@@ -157,28 +156,14 @@ def visualize_augmented_images(
         augmented = augmented.transpose(1, 2, 0)
         original = original.transpose(1, 2, 0)
 
-        ax[2, i].imshow(label)
         ax[1, i].imshow(augmented + 0.1)
         ax[0, i].imshow(original + 0.1)
 
-        ax[0, i].set_title("Originale")
-        ax[1, i].set_title("Augmented")
-        ax[2, i].set_title("Label")
+        ax[0, i].set_title(f"Originale (Label: {label}) \n {classes_name[label]}")
+        ax[1, i].set_title(f"Augmented (Label: {label}) \n {classes_name[label]}")
 
         ax[0, i].axis("off")
         ax[1, i].axis("off")
-        ax[2, i].axis("off")
-
-        arrayShow = np.array([[cmap[i] for i in j] for j in label.numpy()])
-        ax[2, i].imshow(arrayShow)
-    plt.legend(
-        handles=patches,
-        bbox_to_anchor=(1.05, 1),
-        loc=2,
-        borderaxespad=0.0,
-        markerscale=30,
-        fontsize="large",
-    )
 
 
 # define training one epoch
@@ -232,8 +217,10 @@ def train_one_epoch(
 
         # compute confusion matrix
         labels = labels.cpu().detach().numpy()
-        outputs = outputs.argmax(1).cpu().detach().numpy()
-        conf_mt += metrics.pixel_confusion_matrix(labels, outputs, class_num=3)
+        outputs = outputs.argmax(-1).cpu().detach().numpy()
+        conf_mt += confusion_matrix(
+            labels, outputs, labels=list(range(len(class_name)))
+        )
 
     schedule.step()
     running_loss = np.round(running_loss / epoch, 4)
@@ -245,6 +232,7 @@ def train_one_epoch(
     return scores, logs
 
 
+# test one epcoh
 def test_one_epoch(
     test_loader: DataLoader,
     model: Module,
@@ -289,11 +277,13 @@ def test_one_epoch(
             labels = labels.cpu().detach().numpy()
             output = outputs.argmax(1).cpu().detach().numpy()
             output_proba = (
-                torch.nn.functional.softmax(outputs, dim=1).cpu().detach().numpy()
+                torch.nn.functional.softmax(outputs, dim=-1).cpu().detach().numpy()
             )
 
             ###I have to apply soft max
-            conf_mt += metrics.pixel_confusion_matrix(labels, output, class_num=3)
+            conf_mt += confusion_matrix(
+                labels, output, labels=list(range(len(class_name)))
+            )
 
             if last_epoch:
                 metrics_by_threshold.metric_evaluation(labels, output_proba)
@@ -315,74 +305,7 @@ def test_one_epoch(
         return scores, logs, None
 
 
-def generate_metadata_train_test_cv(
-    metadata: pd.DataFrame, train_size: float, n_split: int = 5
-) -> Tuple[List[pd.DataFrame], List[pd.DataFrame]]:
-
-    """
-    Provides train/test indices to split data in train/test sets. Split
-    dataset into k consecutive foldsenerate train and test dataset via k-fold sets
-
-
-    Argguments:
-    ----------
-        metadata: dataframe with the path to images and labels
-        train_size: percentage of in each train set
-        n_split: numbers of folds. Must be at least 2
-    """
-
-    n_total_images = metadata.shape[0]
-    n_images_train = int(n_total_images * train_size)
-
-    print(f"Number fo total images : {n_total_images}")
-    print(f"Number of images to train: {n_images_train} ({train_size*100:.3f}%)")
-
-    metadata_train, metadata_test = [], []
-
-    kf = KFold(n_splits=n_split)
-
-    X = np.arange(10)
-    for train, test in kf.split(metadata):
-        metadata_train.append(
-            metadata.iloc[train]
-            .sample(n_images_train, random_state=42)
-            .copy()
-            .reset_index(drop=True)
-        )
-        metadata_test.append(metadata.iloc[test].copy().reset_index(drop=True))
-
-    return metadata_train, metadata_test
-
-
-def generate_metadata_train_test(
-    train_size: float, test_size: float, metadata: pd.DataFrame
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
-
-    """
-    Generate a train/test set using via holdout set
-
-    Arguments:
-    ---------
-        train_size: percentage of data for training
-        test_size: percentage of data for test
-        metadata: dataframe with the path to images and labels
-    """
-
-    # total number of images
-    n_total_images = metadata.shape[0]
-    n_images_train = int(n_total_images * train_size)
-    n_images_test = int(n_total_images * test_size)
-
-    # Metadata to train and test
-    metadata_train = metadata.iloc[np.arange(0, n_images_train)].reset_index().copy()
-    metadata_test = metadata.iloc[-np.arange(1, n_images_test + 1)].reset_index().copy()
-
-    assert not np.isin(metadata_train.Image, metadata_test.Image).any()
-
-    return metadata_train, metadata_test
-
-
-# train model
+## train model
 def train_model(
     train_loader: DataLoader,
     test_loader: DataLoader,
@@ -526,8 +449,8 @@ def train_model(
                 for parameters in model.backbone.parameters():
                     parameters.requires_grad = True
 
-                for parameters in model.encoder.parameters():
-                    parameters.requires_grad = True
+                for g in optimizer.param_groups:
+                    g["lr"] = 0.001
 
             # Save the model
             if metadata_kwargs["path_to_save_model"]:
@@ -593,10 +516,9 @@ def train_model(
                     metric="f1_score"
                 )
             }
-        )
+        )  # Run a experiment
 
 
-##Run a experiment
 def run_train(
     wandb: wandb,
     wandb_kwargs: dict = None,
@@ -657,14 +579,12 @@ def run_train(
         print("run_id", run_id)
 
     # Define dataset
-    ds_train = randominit.CustomDaset(
+    ds_train = CustomDaset(
         metadata_kwargs["path_to_images"],
-        metadata_kwargs["path_to_labels"],
         metadata_kwargs["metadata_train"],
     )
-    ds_test = randominit.CustomDaset(
+    ds_test = CustomDaset(
         metadata_kwargs["path_to_images"],
-        metadata_kwargs["path_to_labels"],
         metadata_kwargs["metadata_test"],
     )
 
@@ -681,32 +601,21 @@ def run_train(
     )
 
     # Instance Deep Lab model
-    deeplab_model = DeepLab(
+    clf_model = LinearClassifier(
         num_classes=wandb_kwargs["config"]["num_classes"],
-        in_channels=wandb_kwargs["config"]["in_channels"],
-        pretrained=False,
-        arch="resnet50",
-        output_stride=16,
-        bn_momentum=wandb_kwargs["config"]["bn_momentum"],
-        freeze_bn=False,
+        backbone="resnet50",
     )
-    deeplab_model.to(metadata_kwargs["device"])
+    clf_model.to(metadata_kwargs["device"])
 
     if wandb_kwargs["config"]["pretrained"]:
-        deeplab_model.backbone.load_state_dict(
+        clf_model.backbone.load_state_dict(
             torch.load(metadata_kwargs["path_to_load_backbone"]).backbone.state_dict()
         )
-        deeplab_model.encoder.load_state_dict(
-            torch.load(metadata_kwargs["path_to_load_backbone"]).encoder.state_dict()
-        )
 
-        for parameters in deeplab_model.backbone.parameters():
+        for parameters in clf_model.backbone.parameters():
             parameters.requires_grad = False
 
-        for parameters in deeplab_model.encoder.parameters():
-            parameters.requires_grad = False
-
-        deeplab_model.to(metadata_kwargs["device"])
+        clf_model.to(metadata_kwargs["device"])
 
         print("\n --------------------------------------")
         print("The backbone was transfered successfully")
@@ -717,7 +626,7 @@ def run_train(
 
     # Optimizer
     optimizer = torch.optim.Adam(
-        deeplab_model.parameters(),
+        clf_model.parameters(),
         weight_decay=wandb_kwargs["config"]["weight_decay"],
         lr=wandb_kwargs["config"]["learning_rate"],
     )
@@ -725,10 +634,10 @@ def run_train(
     # Learning schedule
     schedule = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
 
-    randominit.train_model(
+    train_model(
         train_dataloader,
         test_dataloader,
-        deeplab_model,
+        clf_model,
         loss,
         optimizer,
         schedule,
@@ -736,3 +645,70 @@ def run_train(
         wandb_kwargs=wandb_kwargs,
         metadata_kwargs=metadata_kwargs,
     )
+
+
+def generate_metadata_train_test_cv(
+    metadata: pd.DataFrame, train_size: float, n_split: int = 5
+) -> Tuple[List[pd.DataFrame], List[pd.DataFrame]]:
+
+    """
+    Provides train/test indices to split data in train/test sets. Split
+    dataset into k consecutive foldsenerate train and test dataset via k-fold sets
+
+
+    Argguments:
+    ----------
+        metadata: dataframe with the path to images and labels
+        train_size: percentage of in each train set
+        n_split: numbers of folds. Must be at least 2
+    """
+
+    n_total_images = metadata.shape[0]
+    n_images_train = int(n_total_images * train_size)
+
+    print(f"Number fo total images : {n_total_images}")
+    print(f"Number of images to train: {n_images_train} ({train_size*100:.3f}%)")
+
+    metadata_train, metadata_test = [], []
+
+    kf = KFold(n_splits=n_split)
+
+    X = np.arange(10)
+    for train, test in kf.split(metadata):
+        metadata_train.append(
+            metadata.iloc[train]
+            .sample(n_images_train, random_state=42)
+            .copy()
+            .reset_index(drop=True)
+        )
+        metadata_test.append(metadata.iloc[test].copy().reset_index(drop=True))
+
+    return metadata_train, metadata_test
+
+
+def generate_metadata_train_test(
+    train_size: float, test_size: float, metadata: pd.DataFrame
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+
+    """
+    Generate a train/test set using via holdout set
+
+    Arguments:
+    ---------
+        train_size: percentage of data for training
+        test_size: percentage of data for test
+        metadata: dataframe with the path to images and labels
+    """
+
+    # total number of images
+    n_total_images = metadata.shape[0]
+    n_images_train = int(n_total_images * train_size)
+    n_images_test = int(n_total_images * test_size)
+
+    # Metadata to train and test
+    metadata_train = metadata.iloc[np.arange(0, n_images_train)].reset_index().copy()
+    metadata_test = metadata.iloc[-np.arange(1, n_images_test + 1)].reset_index().copy()
+
+    assert not np.isin(metadata_train.Image, metadata_test.Image).any()
+
+    return metadata_train, metadata_test
