@@ -450,7 +450,7 @@ def train_model(
                     parameters.requires_grad = True
 
                 for g in optimizer.param_groups:
-                    g["lr"] = 0.00005
+                    g["lr"] = 0.000005
 
             # Save the model
             if metadata_kwargs["path_to_save_model"]:
@@ -601,7 +601,7 @@ def run_train(
     )
 
     # Instance Deep Lab model
-    clf_model = NoneLinearClassifier(
+    clf_model = LinearClassifier(
         num_classes=wandb_kwargs["config"]["num_classes"],
         backbone="resnet50",
     )
@@ -653,7 +653,7 @@ def generate_metadata_train_test_cv(
 
     """
     Provides train/test indices to split data in train/test sets. Split
-    dataset into k consecutive foldsenerate train and test dataset via k-fold sets
+    dataset into k consecutive foldsenerate train and test dataset via k-fold setss
 
 
     Argguments:
