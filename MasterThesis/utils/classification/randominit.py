@@ -1,6 +1,7 @@
 # import libraries
 import numpy as np
 import pandas as pd
+import plotly.express as px
 import os
 import albumentations as album
 from MasterThesis import EDA
@@ -22,6 +23,7 @@ from MasterThesis.models.classification.randominit import (
     LinearClassifier,
     NoneLinearClassifier,
 )
+from sklearn.model_selection import StratifiedKFold
 
 
 def data_augmentation(image, input_size):
@@ -98,9 +100,7 @@ class CustomDaset(torch.utils.data.Dataset):
     def __getitem__(self, index):
 
         # Load and transform input image
-        image = EDA.read_numpy_image(
-            self.path_to_images + self.metadata.Image.tolist()[index]
-        )
+        image = EDA.read_numpy_image(self.path_to_images + self.metadata.Image.tolist()[index])
 
         if len(image.shape) == 4:
             image = EDA.less_cloudy_image(image)
@@ -126,9 +126,7 @@ class CustomDaset(torch.utils.data.Dataset):
         return image, label
 
 
-def visualize_augmented_images(
-    dataset: torch.utils.data.Dataset, n: int = 10, classes_name: List[str] = None
-) -> None:
+def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10, classes_name: List[str] = None) -> None:
 
     """
     Plots augmented images used to train a segmentation model
@@ -141,10 +139,7 @@ def visualize_augmented_images(
         classes_name: name of each class
     """
 
-    cmap = {
-        i: [np.random.random(), np.random.random(), np.random.random(), 1]
-        for i in range(len(classes_name))
-    }
+    cmap = {i: [np.random.random(), np.random.random(), np.random.random(), 1] for i in range(len(classes_name))}
     labels_map = {i: name for i, name in enumerate(classes_name)}
     patches = [mpatches.Patch(color=cmap[i], label=labels_map[i]) for i in cmap]
 
@@ -218,15 +213,11 @@ def train_one_epoch(
         # compute confusion matrix
         labels = labels.cpu().detach().numpy()
         outputs = outputs.argmax(-1).cpu().detach().numpy()
-        conf_mt += confusion_matrix(
-            labels, outputs, labels=list(range(len(class_name)))
-        )
+        conf_mt += confusion_matrix(labels, outputs, labels=list(range(len(class_name))))
 
     schedule.step()
     running_loss = np.round(running_loss / epoch, 4)
-    scores, logs = metrics.model_evaluation(
-        conf_mt, class_name=class_name, dataset_label="Train"
-    )
+    scores, logs = metrics.model_evaluation(conf_mt, class_name=class_name, dataset_label="Train")
     logs.update({"Train loss": running_loss})
 
     return scores, logs
@@ -276,14 +267,10 @@ def test_one_epoch(
             # Confusion matrix
             labels = labels.cpu().detach().numpy()
             output = outputs.argmax(1).cpu().detach().numpy()
-            output_proba = (
-                torch.nn.functional.softmax(outputs, dim=-1).cpu().detach().numpy()
-            )
+            output_proba = torch.nn.functional.softmax(outputs, dim=-1).cpu().detach().numpy()
 
             ###I have to apply soft max
-            conf_mt += confusion_matrix(
-                labels, output, labels=list(range(len(class_name)))
-            )
+            conf_mt += confusion_matrix(labels, output, labels=list(range(len(class_name))))
 
             if last_epoch:
                 metrics_by_threshold.metric_evaluation(labels, output_proba)
@@ -291,16 +278,12 @@ def test_one_epoch(
     running_loss = np.round(running_loss / epoch, 4)
 
     if last_epoch:
-        scores, logs = metrics.model_evaluation(
-            conf_mt, class_name=class_name, dataset_label="Test"
-        )
+        scores, logs = metrics.model_evaluation(conf_mt, class_name=class_name, dataset_label="Test")
         logs.update({"Test loss": running_loss})
         return scores, logs, metrics_by_threshold
 
     else:
-        scores, logs = metrics.model_evaluation(
-            conf_mt, class_name=class_name, dataset_label="Test"
-        )
+        scores, logs = metrics.model_evaluation(conf_mt, class_name=class_name, dataset_label="Test")
         logs.update({"Test loss": running_loss})
         return scores, logs, None
 
@@ -366,15 +349,9 @@ def train_model(
     """
 
     # Definte paths to save and load model
-    checkpoint_path = (
-        f"{metadata_kwargs['path_to_save_model']}/checkpoint_{wandb_kwargs['name']}.pt"
-    )
-    model_path = (
-        f"{metadata_kwargs['path_to_save_model']}/model_{wandb_kwargs['name']}.pth"
-    )
-    checkpoint_load_path = (
-        f"{metadata_kwargs['path_to_load_model']}/checkpoint_{wandb_kwargs['name']}.pt"
-    )
+    checkpoint_path = f"{metadata_kwargs['path_to_save_model']}/checkpoint_{wandb_kwargs['name']}.pt"
+    model_path = f"{metadata_kwargs['path_to_save_model']}/model_{wandb_kwargs['name']}.pth"
+    checkpoint_load_path = f"{metadata_kwargs['path_to_load_model']}/checkpoint_{wandb_kwargs['name']}.pt"
 
     # Create folder to save model
     if metadata_kwargs["path_to_save_model"]:
@@ -384,15 +361,7 @@ def train_model(
     # Initialize WandB
     with wandb.init(**wandb_kwargs):
 
-        wandb.log(
-            {
-                "Label Distribution": EDA.label_pixel_distributio(
-                    metadata_kwargs["path_to_labels"],
-                    metadata_kwargs["metadata"],
-                    metadata_kwargs["select_classes"],
-                )
-            }
-        )
+        wandb.log({"Label Distribution": px.histogram(data_frame=metadata_kwargs["metadata"], x="Classes", histnorm="percent")})
 
         epoch = 0
 
@@ -442,9 +411,7 @@ def train_model(
             wandb.log(logs_test)
             print("------------------------------------------------------------- \n")
 
-            if wandb_kwargs["config"]["fine_tune"] and (
-                wandb_kwargs["config"]["ft_epoch"] == epoch
-            ):
+            if wandb_kwargs["config"]["fine_tune"] and (wandb_kwargs["config"]["ft_epoch"] == epoch):
 
                 for parameters in model.backbone.parameters():
                     parameters.requires_grad = True
@@ -483,40 +450,14 @@ def train_model(
         metrics_table = wandb.Table(dataframe=metrics_by_threshold.get_table())
         wandb.log({"Table_Metrics": metrics_table})
 
-        wandb.log(
-            {
-                "Per Class Accuracy": metrics.plot_metrics_from_logs(
-                    logs_test, metric="Acc_by_Class"
-                )
-            }
-        )
-        wandb.log(
-            {"Recall": metrics.plot_metrics_from_logs(logs_test, metric="Recall")}
-        )
-        wandb.log(
-            {"F1 Score": metrics.plot_metrics_from_logs(logs_test, metric="F1_score")}
-        )
-        wandb.log(
-            {"Precision": metrics.plot_metrics_from_logs(logs_test, metric="Precision")}
-        )
+        wandb.log({"Per Class Accuracy": metrics.plot_metrics_from_logs(logs_test, metric="Acc_by_Class")})
+        wandb.log({"Recall": metrics.plot_metrics_from_logs(logs_test, metric="Recall")})
+        wandb.log({"F1 Score": metrics.plot_metrics_from_logs(logs_test, metric="F1_score")})
+        wandb.log({"Precision": metrics.plot_metrics_from_logs(logs_test, metric="Precision")})
         wandb.log({"Precision Recall Curve": metrics_by_threshold.plot_PR_curve()})
-        wandb.log(
-            {
-                "Precision by Threshold": metrics_by_threshold.get_bar_plot(
-                    metric="precision"
-                )
-            }
-        )
-        wandb.log(
-            {"Recall by Thresholds": metrics_by_threshold.get_bar_plot(metric="recall")}
-        )
-        wandb.log(
-            {
-                "F1_Score by Threshold": metrics_by_threshold.get_bar_plot(
-                    metric="f1_score"
-                )
-            }
-        )  # Run a experiment
+        wandb.log({"Precision by Threshold": metrics_by_threshold.get_bar_plot(metric="precision")})
+        wandb.log({"Recall by Thresholds": metrics_by_threshold.get_bar_plot(metric="recall")})
+        wandb.log({"F1_Score by Threshold": metrics_by_threshold.get_bar_plot(metric="f1_score")})  # Run a experiment
 
 
 def run_train(
@@ -596,21 +537,18 @@ def run_train(
         num_workers=4,
         drop_last=True,
     )
-    test_dataloader = torch.utils.data.DataLoader(
-        ds_test, batch_size=32, shuffle=True, num_workers=4, drop_last=True
-    )
+    test_dataloader = torch.utils.data.DataLoader(ds_test, batch_size=32, shuffle=True, num_workers=4, drop_last=True)
 
     # Instance Deep Lab model
-    clf_model = LinearClassifier(
+    torch.manual_seed(42)
+    clf_model = NoneLinearClassifier(
         num_classes=wandb_kwargs["config"]["num_classes"],
         backbone="resnet50",
     )
     clf_model.to(metadata_kwargs["device"])
 
     if wandb_kwargs["config"]["pretrained"]:
-        clf_model.backbone.load_state_dict(
-            torch.load(metadata_kwargs["path_to_load_backbone"]).backbone.state_dict()
-        )
+        clf_model.backbone.load_state_dict(torch.load(metadata_kwargs["path_to_load_backbone"]).backbone.state_dict())
 
         for parameters in clf_model.backbone.parameters():
             parameters.requires_grad = False
@@ -675,20 +613,13 @@ def generate_metadata_train_test_cv(
 
     X = np.arange(10)
     for train, test in kf.split(metadata):
-        metadata_train.append(
-            metadata.iloc[train]
-            .sample(n_images_train, random_state=42)
-            .copy()
-            .reset_index(drop=True)
-        )
+        metadata_train.append(metadata.iloc[train].sample(n_images_train, random_state=42).copy().reset_index(drop=True))
         metadata_test.append(metadata.iloc[test].copy().reset_index(drop=True))
 
     return metadata_train, metadata_test
 
 
-def generate_metadata_train_test(
-    train_size: float, test_size: float, metadata: pd.DataFrame
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def generate_metadata_train_test(train_size: float, test_size: float, metadata: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
     """
     Generate a train/test set using via holdout set
@@ -710,5 +641,39 @@ def generate_metadata_train_test(
     metadata_test = metadata.iloc[-np.arange(1, n_images_test + 1)].reset_index().copy()
 
     assert not np.isin(metadata_train.Image, metadata_test.Image).any()
+
+    return metadata_train, metadata_test
+
+
+def generate_metadata_train_test_stratified_cv(
+    metadata: pd.DataFrame, train_size: float, n_split: int = 5
+) -> Tuple[List[pd.DataFrame], List[pd.DataFrame]]:
+
+    """
+    Provides train/test indices to split data in train/test sets. Split
+    dataset into k consecutive foldsenerate train and test dataset via k-fold setss
+
+
+    Argguments:
+    ----------
+        metadata: dataframe with the path to images and labels
+        train_size: percentage of in each train set
+        n_split: numbers of folds. Must be at least 2
+    """
+
+    n_total_images = metadata.shape[0]
+    n_images_train = int(n_total_images * train_size)
+
+    print(f"Number fo total images : {n_total_images}")
+    print(f"Number of images to train: {n_images_train} ({train_size*100:.3f}%)")
+
+    metadata_train, metadata_test = [], []
+
+    kf = StratifiedKFold(n_splits=n_split, shuffle=True, random_state=42)
+
+    X = np.arange(10)
+    for train, test in kf.split(metadata, metadata["Labels"].tolist()):
+        metadata_train.append(metadata.iloc[train].sample(n_images_train, random_state=42).copy().reset_index(drop=True))
+        metadata_test.append(metadata.iloc[test].copy().reset_index(drop=True))
 
     return metadata_train, metadata_test

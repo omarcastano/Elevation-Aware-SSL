@@ -1,7 +1,11 @@
+import torch
 from torch.utils.data import DataLoader
 from torch.nn import Module
 from torch import nn
 from torchvision.models import resnet50, resnet18, resnet34
+
+
+torch.manual_seed(42)
 
 BACKBONES = {
     "resnet18": resnet18(weights=None),
@@ -59,6 +63,8 @@ class NoneLinearClassifier(nn.Module):
 
         self.fc = nn.Sequential(
             nn.Linear(in_features=self.backbone.inplanes, out_features=n_hidden),
+            nn.ReLU(),
+            nn.Linear(in_features=n_hidden, out_features=n_hidden),
             nn.ReLU(),
             nn.Linear(in_features=n_hidden, out_features=num_classes),
         )

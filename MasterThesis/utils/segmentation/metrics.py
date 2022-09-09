@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from MasterThesis import EDA
 from sklearn.metrics import confusion_matrix
 import plotly.express as px
 from sklearn.metrics import recall_score, precision_score, f1_score
