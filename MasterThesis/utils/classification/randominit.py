@@ -24,6 +24,7 @@ from MasterThesis.models.classification.randominit import (
     NoneLinearClassifier,
 )
 from sklearn.model_selection import StratifiedKFold
+from IPython.display import clear_output
 
 
 def data_augmentation(image, input_size):
@@ -458,6 +459,7 @@ def train_model(
         wandb.log({"Precision by Threshold": metrics_by_threshold.get_bar_plot(metric="precision")})
         wandb.log({"Recall by Thresholds": metrics_by_threshold.get_bar_plot(metric="recall")})
         wandb.log({"F1_Score by Threshold": metrics_by_threshold.get_bar_plot(metric="f1_score")})  # Run a experiment
+    clear_output(wait=True)
 
 
 def run_train(
