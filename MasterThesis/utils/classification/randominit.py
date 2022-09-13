@@ -27,7 +27,7 @@ from sklearn.model_selection import StratifiedKFold
 from IPython.display import clear_output
 
 
-def data_augmentation(image, input_size):
+def data_augmentation(image, input_size, min_max_croped_size):
 
     """
     Data augmentation such as vertical and horizontal flip,
@@ -44,17 +44,13 @@ def data_augmentation(image, input_size):
 
     aug = album.Compose(
         transforms=[
-            album.VerticalFlip(p=0.5),
+            # album.VerticalFlip(p=0.5),
             album.HorizontalFlip(p=0.5),
-            album.RandomRotate90(p=0.5),
-            album.RandomSizedCrop(
-                min_max_height=(80, 85),
-                height=input_size[0],
-                width=input_size[1],
-                p=0.5,
-            ),
-            album.ToGray(always_apply=False, p=0.1),
-            album.GaussianBlur(blur_limit=(1, 3), p=0.5),
+            # album.RandomRotate90(p=0.5),
+            album.RandomSizedCrop(min_max_height=min_max_croped_size, height=input_size[0], width=input_size[1], p=0.5),
+            album.ToGray(always_apply=False, p=0.2),
+            album.GaussianBlur(blur_limit=(1, 3), p=0.2),
+            album.HueSaturationValue(hue_shift_limit=0.6, sat_shift_limit=(-0.3, 0.3), val_shift_limit=0.1, p=0.2),
         ]
     )
 
@@ -76,6 +72,8 @@ class CustomDaset(torch.utils.data.Dataset):
         path_to_images: str,
         metadata: pd.DataFrame,
         return_original: bool = False,
+        min_max_croped_size: tuple = (80, 85),
+        normalizing_factor: int = 6000,
     ):
 
         """
@@ -93,6 +91,8 @@ class CustomDaset(torch.utils.data.Dataset):
         self.metadata = metadata
         self.path_to_images = path_to_images
         self.return_original = return_original
+        self.min_max_croped_size = min_max_croped_size
+        self.normalizing_factor = normalizing_factor
 
     def __len__(self):
 
@@ -106,7 +106,7 @@ class CustomDaset(torch.utils.data.Dataset):
         if len(image.shape) == 4:
             image = EDA.less_cloudy_image(image)
 
-        image = np.clip(image[:3], 0, 6000) / 6000
+        image = np.clip(image[:3], 0, self.normalizing_factor) / self.normalizing_factor
         original_image = image.copy()
         image = image.transpose(1, 2, 0).astype(np.float32)
 
@@ -114,7 +114,7 @@ class CustomDaset(torch.utils.data.Dataset):
         label = self.metadata.Labels.tolist()[index]
 
         # Data Augmentation
-        image = data_augmentation(image, input_size=[100, 100])
+        image = data_augmentation(image, image.shape, self.min_max_croped_size)
 
         # Set data types compatible with pytorch
         # label = torch.from_numpy(label).long()
@@ -152,8 +152,8 @@ def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10, c
         augmented = augmented.transpose(1, 2, 0)
         original = original.transpose(1, 2, 0)
 
-        ax[1, i].imshow(augmented + 0.1)
-        ax[0, i].imshow(original + 0.1)
+        ax[1, i].imshow(augmented)
+        ax[0, i].imshow(original)
 
         ax[0, i].set_title(f"Originale (Label: {label}) \n {classes_name[label]}")
         ax[1, i].set_title(f"Augmented (Label: {label}) \n {classes_name[label]}")
@@ -525,10 +525,14 @@ def run_train(
     ds_train = CustomDaset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_train"],
+        min_max_croped_size=(28, 29),
+        normalizing_factor=255,
     )
     ds_test = CustomDaset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_test"],
+        min_max_croped_size=(28, 29),
+        normalizing_factor=255,
     )
 
     # define dataloader
@@ -539,13 +543,19 @@ def run_train(
         num_workers=4,
         drop_last=True,
     )
-    test_dataloader = torch.utils.data.DataLoader(ds_test, batch_size=32, shuffle=True, num_workers=4, drop_last=True)
+    test_dataloader = torch.utils.data.DataLoader(
+        ds_test,
+        batch_size=wandb_kwargs["config"]["batch_size"],
+        shuffle=True,
+        num_workers=4,
+        drop_last=True,
+    )
 
     # Instance Deep Lab model
     torch.manual_seed(42)
     clf_model = NoneLinearClassifier(
         num_classes=wandb_kwargs["config"]["num_classes"],
-        backbone="resnet50",
+        backbone=wandb_kwargs["config"]["backbone"],
     )
     clf_model.to(metadata_kwargs["device"])
 

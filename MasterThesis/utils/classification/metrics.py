@@ -54,33 +54,23 @@ def model_evaluation(conf_mt, class_name, dataset_label="Test"):
     # Precision per class
     precision = np.round(np.diag(conf_mt) / (conf_mt.sum(axis=0) + 1e-8), 5)
     unweighted_precision_avg = round(precision.mean(), 5)
-    weighted_precision_avg = round(
-        np.average(precision, weights=conf_mt.sum(axis=1)), 5
-    )
-    precision_dict = {
-        f"{name}": round(score, 5) for name, score in zip(class_name, precision)
-    }
+    weighted_precision_avg = round(np.average(precision, weights=conf_mt.sum(axis=1)), 5)
+    precision_dict = {f"{name}": round(score, 5) for name, score in zip(class_name, precision)}
 
     # Recall per class
     recall = np.round(np.diag(conf_mt) / (conf_mt.sum(axis=1) + 1e-8), 5)
     unweighted_recall_avg = round(recall.mean(), 5)
     weighted_recall_avg = round(np.average(recall, weights=conf_mt.sum(axis=1)), 5)
-    recall_dict = {
-        f"{name}": round(score, 5) for name, score in zip(class_name, recall)
-    }
+    recall_dict = {f"{name}": round(score, 5) for name, score in zip(class_name, recall)}
 
     # F1 Score
     f1_score = np.round((2 * precision * recall) / (recall + precision + 1e-8), 5)
     unweighted_f1_score_avg = round(f1_score.mean(), 5)
     weighted_f1_score_avg = round(np.average(f1_score, weights=conf_mt.sum(axis=1)), 5)
-    f1_score_dict = {
-        f"{name}": round(score, 5) for name, score in zip(class_name, f1_score)
-    }
+    f1_score_dict = {f"{name}": round(score, 5) for name, score in zip(class_name, f1_score)}
 
     # IoU
-    class_iou = np.diag(conf_mt) / (
-        conf_mt.sum(axis=1) + conf_mt.sum(axis=0) - np.diag(conf_mt) + 10e-8
-    )
+    class_iou = np.diag(conf_mt) / (conf_mt.sum(axis=1) + conf_mt.sum(axis=0) - np.diag(conf_mt) + 10e-8)
     unweighted_iou = np.round(np.mean(class_iou), 5)
     weighted_iou = np.round(np.average(class_iou, weights=conf_mt.sum(axis=1)), 5)
 
@@ -95,31 +85,11 @@ def model_evaluation(conf_mt, class_name, dataset_label="Test"):
         index=class_name,
     )
 
-    logs = {
-        f"{i}_Precision": j
-        for i, j in zip(scores.index, scores[f"{dataset_label} Precision"])
-    }
-    logs.update(
-        {
-            f"{i}_Recall": j
-            for i, j in zip(scores.index, scores[f"{dataset_label} Recall"])
-        }
-    )
-    logs.update(
-        {
-            f"{i}_F1_score": j
-            for i, j in zip(scores.index, scores[f"{dataset_label} F1_score"])
-        }
-    )
-    logs.update(
-        {f"{i}_IoU": j for i, j in zip(scores.index, scores[f"{dataset_label} IoU"])}
-    )
-    logs.update(
-        {
-            f"{i}_Acc_by_Class": j
-            for i, j in zip(scores.index, scores[f"{dataset_label} Acc_by_Class"])
-        }
-    )
+    logs = {f"{i}_Precision": j for i, j in zip(scores.index, scores[f"{dataset_label} Precision"])}
+    logs.update({f"{i}_Recall": j for i, j in zip(scores.index, scores[f"{dataset_label} Recall"])})
+    logs.update({f"{i}_F1_score": j for i, j in zip(scores.index, scores[f"{dataset_label} F1_score"])})
+    logs.update({f"{i}_IoU": j for i, j in zip(scores.index, scores[f"{dataset_label} IoU"])})
+    logs.update({f"{i}_Acc_by_Class": j for i, j in zip(scores.index, scores[f"{dataset_label} Acc_by_Class"])})
 
     scores.loc[
         "",
@@ -143,8 +113,7 @@ def model_evaluation(conf_mt, class_name, dataset_label="Test"):
         unweighted_recall_avg,
         unweighted_f1_score_avg,
         unweighted_iou,
-    ]
-
+    
     scores.loc[
         "weighted Avg",
         [
@@ -170,8 +139,8 @@ def model_evaluation(conf_mt, class_name, dataset_label="Test"):
             f"Weighted {dataset_label} Precision": weighted_precision_avg,
             f"Unweighted {dataset_label} Recall": unweighted_recall_avg,
             f"Weighted {dataset_label} Recall": weighted_recall_avg,
-            f"Unweighted {dataset_label} MIou": unweighted_iou,
-            f"Weighted {dataset_label} MIou": weighted_iou,
+            # f"Unweighted {dataset_label} MIou": unweighted_iou,
+            # f"Weighted {dataset_label} MIou": weighted_iou,
         }
     )
 
@@ -212,13 +181,9 @@ class threshold_metric_evaluation:
 
                 y_pred = (y_pred_proba >= t).astype(int)
 
-                recall = recall_score(
-                    (y_true == y) * 1, y_pred, pos_label=1, zero_division=0
-                )
+                recall = recall_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=0)
 
-                precision = precision_score(
-                    (y_true == y) * 1, y_pred, pos_label=1, zero_division=0
-                )
+                precision = precision_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=0)
 
                 f1 = f1_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=0)
 
@@ -258,9 +223,7 @@ class threshold_metric_evaluation:
             markers=True,
             hover_data=["thresholds"],
         )
-        fig.update_layout(
-            yaxis_title=f"Precision", xaxis_title="Recall", font={"size": 14}
-        )
+        fig.update_layout(yaxis_title=f"Precision", xaxis_title="Recall", font={"size": 14})
 
         return fig
 
@@ -273,12 +236,8 @@ class threshold_metric_evaluation:
             result.precision /= self.epoch
             result.f1_score /= self.epoch
 
-        fig = px.line(
-            data_frame=result, x="thresholds", y=f"{metric}", color=color, markers=True
-        )
-        fig.update_layout(
-            yaxis_title=f"{metric}", xaxis_title="Threshold", font={"size": 14}
-        )
+        fig = px.line(data_frame=result, x="thresholds", y=f"{metric}", color=color, markers=True)
+        fig.update_layout(yaxis_title=f"{metric}", xaxis_title="Threshold", font={"size": 14})
 
         return fig
 

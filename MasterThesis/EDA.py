@@ -125,9 +125,7 @@ def pixel_histogram(path_to_images, metadata, sample=20, clip=None):
             value to clip pixel images
     """
 
-    images = np.array(
-        [read_numpy_image(img) for img in path_to_images + metadata.head(sample).Image]
-    )
+    images = np.array([read_numpy_image(img) for img in path_to_images + metadata.head(sample).Image])
 
     if clip:
         images = np.clip(images, 0, clip)
@@ -144,9 +142,7 @@ def pixel_histogram(path_to_images, metadata, sample=20, clip=None):
         sns.histplot(x=img.ravel(), ax=ax)
         ax.set_xlabel("Pixel Value")
         ax.legend(
-            [
-                f"Band {i} \n Mean={img.mean().round(3)} \n Min={img.min()}, \n Max={img.max()}"
-            ],
+            [f"Band {i} \n Mean={img.mean().round(3)} \n Min={img.min()}, \n Max={img.max()}"],
             fontsize=15,
         )
         i += 1
@@ -176,9 +172,7 @@ def less_cloudy_image(images):
 
 
 # Plot less cloudy image from the time seires
-def pixel_histogram_with_image(
-    path_to_images, metadata, sample=5, scale_factor=13000, cloud_mask=False, clip=None
-):
+def pixel_histogram_with_image(path_to_images, metadata, sample=5, scale_factor=13000, cloud_mask=False, clip=None):
 
     """
     This function plots the histogram and the image for the RGB bands. You
@@ -205,24 +199,14 @@ def pixel_histogram_with_image(
 
     if cloud_mask:
         masked_images = []
-        images = np.array(
-            [
-                read_numpy_image(img)
-                for img in path_to_images + metadata.head(sample).Image
-            ]
-        )
+        images = np.array([read_numpy_image(img) for img in path_to_images + metadata.head(sample).Image])
         for img in images:
             masked_images.append(less_cloudy_image(img))
         images = np.array(masked_images)
 
     else:
         idx = 2  # np.random.randint(0,24)
-        images = np.array(
-            [
-                read_numpy_image(img)[idx]
-                for img in path_to_images + metadata.head(sample).Image
-            ]
-        )
+        images = np.array([read_numpy_image(img)[idx] for img in path_to_images + metadata.head(sample).Image])
 
     if clip:
         images = np.clip(images, 0, clip)
@@ -247,9 +231,7 @@ def pixel_histogram_with_image(
         sns.histplot(x=img.ravel(), ax=ax[1, i])
         ax[1, i].set_xlabel("Pixel Value")
         ax[1, i].legend(
-            [
-                f"Mean={img.mean().round(3)} \n Min={img.min().round(3)}, \n Max={img.max().round(3)}"
-            ],
+            [f"Mean={img.mean().round(3)} \n Min={img.min().round(3)}, \n Max={img.max().round(3)}"],
             fontsize=10,
         )
 
@@ -279,9 +261,7 @@ def simple_cloud_mask_filter(image, scale_factor, clip, threshold=0.5):
         return ("Remove", image)
 
 
-def pixel_histogram_and_filtered_image(
-    path_to_images, metadata, sample=5, scale_factor=13000, clip=None, threshold=0.5
-):
+def pixel_histogram_and_filtered_image(path_to_images, metadata, sample=5, scale_factor=13000, clip=None, threshold=0.5):
 
     """
     This function plots the histogram and the image for the RGB bands.
@@ -308,9 +288,7 @@ def pixel_histogram_and_filtered_image(
     masked_images = []
     images = read_numpy_image(path_to_images + metadata.loc[2].Image)
     for img in images:
-        masked_images.append(
-            simple_cloud_mask_filter(img, scale_factor, clip, threshold)
-        )
+        masked_images.append(simple_cloud_mask_filter(img, scale_factor, clip, threshold))
 
     images = []
     labels = []
@@ -343,9 +321,7 @@ def pixel_histogram_and_filtered_image(
         sns.histplot(x=img.ravel(), ax=ax[1, i])
         ax[1, i].set_xlabel("Pixel Value")
         ax[1, i].legend(
-            [
-                f"Mean={img.mean().round(3)} \n Min={img.min().round(3)}, \n Max={img.max().round(3)}"
-            ],
+            [f"Mean={img.mean().round(3)} \n Min={img.min().round(3)}, \n Max={img.max().round(3)}"],
             fontsize=10,
         )
 
@@ -396,16 +372,9 @@ def visualize_images_and_masks(
 
     if temporal_dim:
         for i in range(n):
-            img = read_numpy_image(
-                path_to_images
-                + metadata["Image"].sample(n, random_state=seed).values[i]
-            )
-            label = read_geotiff_image(
-                path_to_label + metadata["Mask"].sample(n, random_state=seed).values[i]
-            )
-            ax[0, i].imshow(
-                np.clip(img[0][[0, 1, 2]].transpose(1, 2, 0), 0, 6000) / 6000
-            )
+            img = read_numpy_image(path_to_images + metadata["Image"].sample(n, random_state=seed).values[i])
+            label = read_geotiff_image(path_to_label + metadata["Mask"].sample(n, random_state=seed).values[i])
+            ax[0, i].imshow(np.clip(img[0][[0, 1, 2]].transpose(1, 2, 0), 0, 6000) / 6000)
             ax[1, i].imshow(label)
             arrayShow = np.array([[cmap[i] for i in j] for j in label])
             ax[1, i].imshow(arrayShow)
@@ -420,13 +389,8 @@ def visualize_images_and_masks(
 
     else:
         for i in range(n):
-            img = read_numpy_image(
-                path_to_images
-                + metadata["Image"].sample(n, random_state=seed).values[i]
-            )
-            label = read_geotiff_image(
-                path_to_label + metadata["Mask"].sample(n, random_state=seed).values[i]
-            )
+            img = read_numpy_image(path_to_images + metadata["Image"].sample(n, random_state=seed).values[i])
+            label = read_geotiff_image(path_to_label + metadata["Mask"].sample(n, random_state=seed).values[i])
             ax[0, i].imshow(np.clip(img[0:3].transpose(1, 2, 0), 0, 6000) / 6000)
             ax[1, i].imshow(label)
 
@@ -444,9 +408,64 @@ def visualize_images_and_masks(
     return fig
 
 
-def label_pixel_distributio(
-    path_to_label: str, metadata: pd.DataFrame, select_classes: list
+# helper function for data visualization#
+def visualize_images_and_labels(
+    path_to_images,
+    metadata,
+    n=5,
+    temporal_dim=False,
+    rgb_bands=[0, 1, 2],
+    figsize=(10, 5),
 ):
+
+    """
+    Plots RGB images and labels. If images come with extra temporal
+    information, they must have the sahpe (T,C,W,H), otherwise
+    they should have the shape (C,W,H).
+
+    Argument:
+        path_to_label: string
+            path to labels
+        path_to_images: string
+            path to imags
+        metadata: data frame
+            dataframe with the name of each image and label
+        temporal_dim: bool. default=True
+            wether images have temporal dimension or not.
+            if images have temporal dimension, the must have the
+            shape (T,C,W,H)
+        rgb_bands: List, default=[0,1,2]
+            list with the indices of the rgb bands
+        n: int
+            number of images to plot
+        figsize: tuple
+            matplotlib figure size
+    """
+
+    fig, ax = plt.subplots(1, n, figsize=figsize)
+
+    images = metadata.Image.tolist()
+    labels = metadata.Labels.tolist()
+    classes = metadata.Classes.tolist()
+
+    if temporal_dim:
+        for i in range(n):
+
+            img = read_numpy_image(path_to_images + images[i])
+            ax[i].imshow(img[0][rgb_bands].transpose(1, 2, 0))
+            ax[i].axis("off")
+            ax[i].set_title(f"{classes[i]} ({labels[i]})")
+
+    else:
+        for i in range(n):
+
+            img = read_numpy_image(path_to_images + images[i])
+            ax[i].imshow(img.transpose(1, 2, 0))
+            ax[i].axis("off")
+            ax[i].set_title(f"{classes[i]} ({labels[i]})")
+
+
+def label_pixel_distributio(path_to_label: str, metadata: pd.DataFrame, select_classes: list):
 
     """
     Plots label distribution
