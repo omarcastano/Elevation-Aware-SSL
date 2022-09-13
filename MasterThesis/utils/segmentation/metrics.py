@@ -45,9 +45,7 @@ def class_IoU(y_true, y_pred, num_classes):
     """
 
     conf_mt = confusion_matrix(y_true, y_pred, class_num=num_classes)
-    class_iou = np.diag(conf_mt) / (
-        conf_mt.sum(axis=1) + conf_mt.sum(axis=0) - np.diag(conf_mt) + 10e-8
-    )
+    class_iou = np.diag(conf_mt) / (conf_mt.sum(axis=1) + conf_mt.sum(axis=0) - np.diag(conf_mt) + 10e-8)
 
     return class_iou
 
@@ -111,13 +109,9 @@ class threshold_metric_evaluation:
 
                 y_pred = (y_pred_proba >= t).astype(int)
 
-                recall = recall_score(
-                    (y_true == y) * 1, y_pred, pos_label=1, zero_division=0
-                )
+                recall = recall_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=0)
 
-                precision = precision_score(
-                    (y_true == y) * 1, y_pred, pos_label=1, zero_division=1
-                )
+                precision = precision_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=1)
 
                 f1 = f1_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=0)
 
@@ -157,9 +151,7 @@ class threshold_metric_evaluation:
             markers=True,
             hover_data=["thresholds"],
         )
-        fig.update_layout(
-            yaxis_title=f"Precision", xaxis_title="Recall", font={"size": 14}
-        )
+        fig.update_layout(yaxis_title=f"Precision", xaxis_title="Recall", font={"size": 14})
 
         return fig
 
@@ -172,12 +164,8 @@ class threshold_metric_evaluation:
             result.precision /= self.epoch
             result.f1_score /= self.epoch
 
-        fig = px.line(
-            data_frame=result, x="thresholds", y=f"{metric}", color=color, markers=True
-        )
-        fig.update_layout(
-            yaxis_title=f"{metric}", xaxis_title="Threshold", font={"size": 14}
-        )
+        fig = px.line(data_frame=result, x="thresholds", y=f"{metric}", color=color, markers=True)
+        fig.update_layout(yaxis_title=f"{metric}", xaxis_title="Threshold", font={"size": 14})
 
         return fig
 
@@ -217,33 +205,23 @@ def model_evaluation(conf_mt, class_name, dataset_label="Test"):
     # Precision per class
     precision = np.round(np.diag(conf_mt) / (conf_mt.sum(axis=0) + 1e-8), 5)
     unweighted_precision_avg = round(precision.mean(), 5)
-    weighted_precision_avg = round(
-        np.average(precision, weights=conf_mt.sum(axis=1)), 5
-    )
-    precision_dict = {
-        f"{name}": round(score, 5) for name, score in zip(class_name, precision)
-    }
+    weighted_precision_avg = round(np.average(precision, weights=conf_mt.sum(axis=1)), 5)
+    precision_dict = {f"{name}": round(score, 5) for name, score in zip(class_name, precision)}
 
     # Recall per class
     recall = np.round(np.diag(conf_mt) / (conf_mt.sum(axis=1) + 1e-8), 5)
     unweighted_recall_avg = round(recall.mean(), 5)
     weighted_recall_avg = round(np.average(recall, weights=conf_mt.sum(axis=1)), 5)
-    recall_dict = {
-        f"{name}": round(score, 5) for name, score in zip(class_name, recall)
-    }
+    recall_dict = {f"{name}": round(score, 5) for name, score in zip(class_name, recall)}
 
     # F1 Score
     f1_score = np.round((2 * precision * recall) / (recall + precision + 1e-8), 5)
     unweighted_f1_score_avg = round(f1_score.mean(), 5)
     weighted_f1_score_avg = round(np.average(f1_score, weights=conf_mt.sum(axis=1)), 5)
-    f1_score_dict = {
-        f"{name}": round(score, 5) for name, score in zip(class_name, f1_score)
-    }
+    f1_score_dict = {f"{name}": round(score, 5) for name, score in zip(class_name, f1_score)}
 
     # IoU
-    class_iou = np.diag(conf_mt) / (
-        conf_mt.sum(axis=1) + conf_mt.sum(axis=0) - np.diag(conf_mt) + 10e-8
-    )
+    class_iou = np.diag(conf_mt) / (conf_mt.sum(axis=1) + conf_mt.sum(axis=0) - np.diag(conf_mt) + 10e-8)
     unweighted_iou = np.round(np.mean(class_iou), 5)
     weighted_iou = np.round(np.average(class_iou, weights=conf_mt.sum(axis=1)), 5)
 
@@ -258,31 +236,11 @@ def model_evaluation(conf_mt, class_name, dataset_label="Test"):
         index=class_name,
     )
 
-    logs = {
-        f"{i}_Precision": j
-        for i, j in zip(scores.index, scores[f"{dataset_label} Precision"])
-    }
-    logs.update(
-        {
-            f"{i}_Recall": j
-            for i, j in zip(scores.index, scores[f"{dataset_label} Recall"])
-        }
-    )
-    logs.update(
-        {
-            f"{i}_F1_score": j
-            for i, j in zip(scores.index, scores[f"{dataset_label} F1_score"])
-        }
-    )
-    logs.update(
-        {f"{i}_IoU": j for i, j in zip(scores.index, scores[f"{dataset_label} IoU"])}
-    )
-    logs.update(
-        {
-            f"{i}_Acc_by_Class": j
-            for i, j in zip(scores.index, scores[f"{dataset_label} Acc_by_Class"])
-        }
-    )
+    logs = {f"{i}_Precision": j for i, j in zip(scores.index, scores[f"{dataset_label} Precision"])}
+    logs.update({f"{i}_Recall": j for i, j in zip(scores.index, scores[f"{dataset_label} Recall"])})
+    logs.update({f"{i}_F1_score": j for i, j in zip(scores.index, scores[f"{dataset_label} F1_score"])})
+    logs.update({f"{i}_IoU": j for i, j in zip(scores.index, scores[f"{dataset_label} IoU"])})
+    logs.update({f"{i}_Acc_by_Class": j for i, j in zip(scores.index, scores[f"{dataset_label} Acc_by_Class"])})
 
     scores.loc[
         "",
@@ -414,16 +372,10 @@ def plot_metrics_from_artifacts(
     precision = 0
     recall = 0
     f1_score = 0
-    ids = [
-        j["id"]
-        for j in summary_runs
-        if (j["version"] == version) and (j["amount_of_ft_data"] == ft_data)
-    ]
+    ids = [j["id"] for j in summary_runs if (j["version"] == version) and (j["amount_of_ft_data"] == ft_data)]
 
     for n, id in enumerate(ids, 1):
-        my_table = run.use_artifact(
-            f"omar_castno/MasterThesis/run-{id}-{table_name}:v0"
-        ).get(table_name)
+        my_table = run.use_artifact(f"omar_castno/MasterThesis/run-{id}-{table_name}:v0").get(table_name)
         my_table = pd.DataFrame(data=my_table.data, columns=my_table.columns)
         precision += my_table.precision
         recall += my_table.recall
@@ -478,9 +430,7 @@ def plot_loss_from_artifact(
     ids = [j["id"] for j in summary_runs if j["version"] == version]
 
     for n, id in enumerate(ids, 1):
-        my_table = run.use_artifact(
-            f"omar_castno/MasterThesis/run-{id}-{table_name}:v0"
-        ).get(table_name)
+        my_table = run.use_artifact(f"omar_castno/MasterThesis/run-{id}-{table_name}:v0").get(table_name)
         my_table = pd.DataFrame(data=my_table.data, columns=my_table.columns)
         df = df.append(my_table, ignore_index=False)
         train_loss += my_table.train_loss

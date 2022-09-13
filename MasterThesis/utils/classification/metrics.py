@@ -113,7 +113,7 @@ def model_evaluation(conf_mt, class_name, dataset_label="Test"):
         unweighted_recall_avg,
         unweighted_f1_score_avg,
         unweighted_iou,
-    
+    ]
     scores.loc[
         "weighted Avg",
         [
@@ -128,6 +128,7 @@ def model_evaluation(conf_mt, class_name, dataset_label="Test"):
         weighted_f1_score_avg,
         weighted_iou,
     ]
+
     scores.fillna("", inplace=True)
 
     logs.update(
@@ -139,8 +140,8 @@ def model_evaluation(conf_mt, class_name, dataset_label="Test"):
             f"Weighted {dataset_label} Precision": weighted_precision_avg,
             f"Unweighted {dataset_label} Recall": unweighted_recall_avg,
             f"Weighted {dataset_label} Recall": weighted_recall_avg,
-            # f"Unweighted {dataset_label} MIou": unweighted_iou,
-            # f"Weighted {dataset_label} MIou": weighted_iou,
+            f"Unweighted {dataset_label} MIou": unweighted_iou,
+            f"Weighted {dataset_label} MIou": weighted_iou,
         }
     )
 
