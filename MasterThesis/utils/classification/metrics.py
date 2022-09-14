@@ -177,9 +177,6 @@ class threshold_metric_evaluation:
 
         for y in np.unique(y_true):
             y_pred_proba = y_score[:, y].ravel()
-            print(y_pred_proba.shape)
-            print(y)
-
             for t in np.arange(0.00, 1.0, 0.1):
 
                 y_pred = (y_pred_proba >= t).astype(int)
@@ -199,6 +196,9 @@ class threshold_metric_evaluation:
                         "class": self.select_classes[y],
                     }
                 )
+
+                if y == 2:
+                    print(result)
 
         if self.epoch == 0:
             self.result = pd.DataFrame(result)
