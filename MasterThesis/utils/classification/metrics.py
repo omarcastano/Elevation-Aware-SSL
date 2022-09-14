@@ -218,7 +218,7 @@ class threshold_metric_evaluation:
             self.result.f1_score += pd.DataFrame(result).f1_score
             self.epoch += 1
 
-        print(slef.result)
+        print(self.result)
 
     def plot_PR_curve(self, color="class"):
 
