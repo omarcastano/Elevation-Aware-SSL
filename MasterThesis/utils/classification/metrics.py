@@ -198,16 +198,16 @@ class threshold_metric_evaluation:
                     }
                 )
 
-            if y == 2:
-                print(
-                    {
-                        "recall": recall,
-                        "precision": precision,
-                        "f1_score": f1,
-                        "thresholds": round(t, 3),
-                        "class": self.select_classes[y],
-                    }
-                )
+            # if y == 2:
+            #    print(
+            #        {
+            #            "recall": recall,
+            #            "precision": precision,
+            #            "f1_score": f1,
+            #            "thresholds": round(t, 3),
+            #            "class": self.select_classes[y],
+            #        }
+            #    )
 
         if self.epoch == 0:
             self.result = pd.DataFrame(result)
@@ -217,6 +217,8 @@ class threshold_metric_evaluation:
             self.result.precision += pd.DataFrame(result).precision
             self.result.f1_score += pd.DataFrame(result).f1_score
             self.epoch += 1
+
+        print(slef.result)
 
     def plot_PR_curve(self, color="class"):
 
