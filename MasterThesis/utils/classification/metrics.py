@@ -197,17 +197,17 @@ class threshold_metric_evaluation:
                         "class": self.select_classes[y],
                     }
                 )
-
-            # if y == 2:
-            #    print(
-            #        {
-            #            "recall": recall,
-            #            "precision": precision,
-            #            "f1_score": f1,
-            #            "thresholds": round(t, 3),
-            #            "class": self.select_classes[y],
-            #        }
-            #    )
+        print("threshold=", t)
+        # if y == 2:
+        #    print(
+        #        {
+        #            "recall": recall,
+        #            "precision": precision,
+        #            "f1_score": f1,
+        #            "thresholds": round(t, 3),
+        #            "class": self.select_classes[y],
+        #        }
+        #    )
 
         if self.epoch == 0:
             self.result = pd.DataFrame(result)
