@@ -454,7 +454,6 @@ def train_model(
         wandb.log({"Loss": wandb.Table(dataframe=loss)})
         metrics_table = wandb.Table(dataframe=metrics_by_threshold.get_table())
         print(metrics_by_threshold.get_table())
-        #        print(metrics_by_threshold.get_table().query("class == 'bird'"))
         wandb.log({"Table_Metrics": metrics_table})
 
         wandb.log({"Per Class Accuracy": metrics.plot_metrics_from_logs(logs_test, metric="Acc_by_Class")})

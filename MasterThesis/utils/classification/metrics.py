@@ -177,6 +177,8 @@ class threshold_metric_evaluation:
 
         for y in np.unique(y_true):
             y_pred_proba = y_score[:, y].ravel()
+            print(y_pred_proba.shape)
+            print(y)
 
             for t in np.arange(0.00, 1.0, 0.1):
 
