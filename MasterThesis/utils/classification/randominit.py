@@ -535,6 +535,16 @@ def run_train(
         normalizing_factor=255,
     )
 
+    ds_train_sample = CustomDaset(
+        metadata_kwargs["path_to_images"],
+        metadata_kwargs["metadata_train"],
+        return_original=True,
+        min_max_croped_size=(28, 29),
+        normalizing_factor=255,
+    )
+
+    visualize_augmented_images(ds_train_sample, classes_name=metadata_kwargs["select_classes"])
+
     # define dataloader
     train_dataloader = torch.utils.data.DataLoader(
         ds_train,
