@@ -251,11 +251,14 @@ def test_one_epoch(
 
     """
 
+    conf_mt = 0
     running_loss = 0
     logs = {}
     metrics_by_threshold = metrics.threshold_metric_evaluation(class_name)
-    conf_mt = 0
 
+    y_true = []
+    y_pred = []
+    y_pred_proba = []
     model.eval()
 
     with torch.no_grad():
@@ -275,10 +278,18 @@ def test_one_epoch(
             output_proba = torch.nn.functional.softmax(outputs, dim=-1).cpu().detach().numpy()
 
             ###I have to apply soft max
-            conf_mt += confusion_matrix(labels, output, labels=list(range(len(class_name))))
+            y_true.append(labels)
+            y_pred.append(output)
+            y_pred_proba.append(output_proba)
 
-            if last_epoch:
-                metrics_by_threshold.metric_evaluation(labels, output_proba)
+    y_true = np.hstack(y_true)
+    y_pred = np.hstack(y_pred)
+    y_pred_proba = np.vstack(y_pred_proba)
+
+    if last_epoch:
+        metrics_by_threshold.metric_evaluation(y_true, y_pred_proba)
+
+    conf_mt = confusion_matrix(y_true, y_pred, labels=list(range(len(class_name))))
 
     running_loss = np.round(running_loss / epoch, 4)
 

@@ -169,25 +169,22 @@ class threshold_metric_evaluation:
 
     def __init__(self, select_classes):
         self.select_classes = select_classes
-        self.epoch = 0
-        print(select_classes)
 
     def metric_evaluation(self, y_true, y_score):
 
         result = []
 
-        print("unique", np.unique(y_true))
         for y in np.unique(y_true):
             y_pred_proba = y_score[:, y].ravel()
-            for t in np.arange(0.00, 0.99, 0.1):
+            for t in np.arange(0.00, 1.01, 0.05):
 
                 y_pred = (y_pred_proba >= t).astype(int)
 
-                recall = recall_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=0)
+                recall = recall_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=1)
 
-                precision = precision_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=0)
+                precision = precision_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=1)
 
-                f1 = f1_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=0)
+                f1 = f1_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=1)
 
                 result.append(
                     {
@@ -198,37 +195,14 @@ class threshold_metric_evaluation:
                         "class": self.select_classes[y],
                     }
                 )
-        print("threshold=", t)
-        # if y == 2:
-        #    print(
-        #        {
-        #            "recall": recall,
-        #            "precision": precision,
-        #            "f1_score": f1,
-        #            "thresholds": round(t, 3),
-        #            "class": self.select_classes[y],
-        #        }
-        #    )
 
-        if self.epoch == 0:
-            self.result = pd.DataFrame(result)
-            self.epoch += 1
-        else:
-            self.result.recall += pd.DataFrame(result).recall
-            self.result.precision += pd.DataFrame(result).precision
-            self.result.f1_score += pd.DataFrame(result).f1_score
-            self.epoch += 1
+        self.result = pd.DataFrame(result)
 
         print(self.result)
 
     def plot_PR_curve(self, color="class"):
 
         result = self.result.copy()
-
-        if self.epoch != 0:
-            result.recall /= self.epoch
-            result.precision /= self.epoch
-            result.f1_score /= self.epoch
 
         fig = px.line(
             data_frame=result,
@@ -246,11 +220,6 @@ class threshold_metric_evaluation:
 
         result = self.result.copy()
 
-        if self.epoch != 0:
-            result.recall /= self.epoch
-            result.precision /= self.epoch
-            result.f1_score /= self.epoch
-
         fig = px.line(data_frame=result, x="thresholds", y=f"{metric}", color=color, markers=True)
         fig.update_layout(yaxis_title=f"{metric}", xaxis_title="Threshold", font={"size": 14})
 
@@ -259,11 +228,6 @@ class threshold_metric_evaluation:
     def get_table(self):
 
         result = self.result.copy()
-
-        if self.epoch != 0:
-            result.recall /= self.epoch
-            result.precision /= self.epoch
-            result.f1_score /= self.epoch
 
         return result
 
