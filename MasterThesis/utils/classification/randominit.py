@@ -1,4 +1,5 @@
 # import libraries
+from ast import arguments
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -74,6 +75,7 @@ class CustomDaset(torch.utils.data.Dataset):
         return_original: bool = False,
         min_max_croped_size: tuple = (80, 85),
         normalizing_factor: int = 6000,
+        augmentation: bool = False,
     ):
 
         """
@@ -93,6 +95,7 @@ class CustomDaset(torch.utils.data.Dataset):
         self.return_original = return_original
         self.min_max_croped_size = min_max_croped_size
         self.normalizing_factor = normalizing_factor
+        self.augmentation = augmentation
 
     def __len__(self):
 
@@ -113,8 +116,9 @@ class CustomDaset(torch.utils.data.Dataset):
         # Load label
         label = self.metadata.Labels.tolist()[index]
 
-        # Data Augmentation
-        image = data_augmentation(image, image.shape, self.min_max_croped_size)
+        if self.augmentation:
+            # Data Augmentation
+            image = data_augmentation(image, image.shape, self.min_max_croped_size)
 
         # Set data types compatible with pytorch
         # label = torch.from_numpy(label).long()
@@ -161,6 +165,8 @@ def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10, c
         ax[0, i].axis("off")
         ax[1, i].axis("off")
 
+    plt.show()
+
 
 # define training one epoch
 def train_one_epoch(
@@ -174,7 +180,6 @@ def train_one_epoch(
 ):
 
     """
-
     Arguments:
         train_dataloader: pytorch dataloader with training images and labels
         model: pytorch model for semantic segmentation
@@ -183,7 +188,6 @@ def train_one_epoch(
         class_name: list with the name of each class
         schduler: pytorch learning scheduler
         device: device to tran the network sucha as cpu or cuda
-
     """
 
     running_loss = 0
@@ -521,18 +525,21 @@ def run_train(
         run_id = wandb.util.generate_id()
         print("run_id", run_id)
 
-    # Define dataset
+    # Define datasets
     ds_train = CustomDaset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_train"],
         min_max_croped_size=(28, 29),
         normalizing_factor=255,
+        augmentation=True,
     )
+
     ds_test = CustomDaset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_test"],
         min_max_croped_size=(28, 29),
         normalizing_factor=255,
+        augmentation=True,
     )
 
     ds_train_sample = CustomDaset(
@@ -541,6 +548,7 @@ def run_train(
         return_original=True,
         min_max_croped_size=(28, 29),
         normalizing_factor=255,
+        augmentation=True,
     )
 
     visualize_augmented_images(ds_train_sample, classes_name=metadata_kwargs["select_classes"])
