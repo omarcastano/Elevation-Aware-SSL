@@ -170,6 +170,7 @@ class threshold_metric_evaluation:
     def __init__(self, select_classes):
         self.select_classes = select_classes
         self.epoch = 0
+        print(select_classes)
 
     def metric_evaluation(self, y_true, y_score):
 
@@ -197,8 +198,8 @@ class threshold_metric_evaluation:
                     }
                 )
 
-                if y == 2:
-                    print(result)
+            if y == 2:
+                print(result)
 
         if self.epoch == 0:
             self.result = pd.DataFrame(result)
