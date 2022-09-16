@@ -433,7 +433,7 @@ def train_model(
                     parameters.requires_grad = True
 
                 for g in optimizer.param_groups:
-                    g["lr"] = 0.000005
+                    g["lr"] = 0.00001
 
             # Save the model
             if metadata_kwargs["path_to_save_model"]:

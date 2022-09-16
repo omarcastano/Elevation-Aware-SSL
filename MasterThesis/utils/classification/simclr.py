@@ -46,9 +46,9 @@ def data_augmentation(img, min_max_croped_size):
             album.HorizontalFlip(p=0.5),
             # album.RandomRotate90(p=0.5),
             album.RandomSizedCrop(min_max_height=min_max_croped_size, height=input_size[0], width=input_size[1], p=0.5),
-            album.ToGray(always_apply=False, p=0.2),
-            album.GaussianBlur(blur_limit=(1, 3), p=0.2),
-            album.HueSaturationValue(hue_shift_limit=0.6, sat_shift_limit=(-0.3, 0.3), val_shift_limit=0.1, p=0.2),
+            album.ToGray(always_apply=False, p=0.5),
+            album.GaussianBlur(blur_limit=(1, 5), p=0.3),
+            album.HueSaturationValue(hue_shift_limit=0.6, sat_shift_limit=(-0.4, 0.4), val_shift_limit=0.1, p=0.3),
         ]
     )
 
@@ -479,7 +479,7 @@ def run_train(
 
     # Instance Deep Lab model
     model = SimCLR(
-        proj_hidden_dim=512,
+        proj_hidden_dim=128,
         proj_output_dim=128,
         backbone=wandb_kwargs["config"]["backbone"],
     )
