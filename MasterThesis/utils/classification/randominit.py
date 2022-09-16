@@ -49,8 +49,8 @@ def data_augmentation(image, input_size, min_max_croped_size):
             album.HorizontalFlip(p=0.5),
             # album.RandomRotate90(p=0.5),
             album.RandomSizedCrop(min_max_height=min_max_croped_size, height=input_size[0], width=input_size[1], p=0.5),
-            album.ToGray(always_apply=False, p=0.2),
-            album.GaussianBlur(blur_limit=(1, 3), p=0.2),
+            album.ToGray(always_apply=False, p=0.5),
+            album.GaussianBlur(blur_limit=(1, 5), p=0.2),
             album.HueSaturationValue(hue_shift_limit=0.6, sat_shift_limit=(-0.3, 0.3), val_shift_limit=0.1, p=0.2),
         ]
     )
@@ -551,7 +551,7 @@ def run_train(
         metadata_kwargs["metadata_test"],
         min_max_croped_size=(28, 29),
         normalizing_factor=255,
-        augmentation=True,
+        augmentation=False,
     )
 
     ds_train_sample = CustomDaset(

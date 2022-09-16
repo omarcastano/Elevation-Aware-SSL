@@ -19,7 +19,7 @@ from MasterThesis.utils.classification.losses import NTXentLoss
 from pl_bolts.optimizers import LARS
 
 # Data loader
-def data_augmentation(img):
+def data_augmentation(img, min_max_croped_size):
 
     """
     Data augmentation for such as vertical and horizontal flip,
@@ -41,24 +41,14 @@ def data_augmentation(img):
     input_size = img.shape
 
     transform = album.Compose(
-        [
-            album.RandomSizedCrop(
-                min_max_height=(70, 75),
-                height=input_size[0],
-                width=input_size[1],
-                p=0.5,
-            ),
-            album.VerticalFlip(p=0.5),
+        transforms=[
+            # album.VerticalFlip(p=0.5),
             album.HorizontalFlip(p=0.5),
-            album.RandomRotate90(),
-            # album.HueSaturationValue(
-            #    hue_shift_limit=0.5,
-            #    sat_shift_limit=(-0.05, 0.2),
-            #    val_shift_limit=0.08,
-            #    p=0.8,
-            # ),
-            album.ToGray(always_apply=False, p=0.1),
-            album.GaussianBlur(blur_limit=(1, 5), p=0.5),
+            # album.RandomRotate90(p=0.5),
+            album.RandomSizedCrop(min_max_height=min_max_croped_size, height=input_size[0], width=input_size[1], p=0.5),
+            album.ToGray(always_apply=False, p=0.2),
+            album.GaussianBlur(blur_limit=(1, 3), p=0.2),
+            album.HueSaturationValue(hue_shift_limit=0.6, sat_shift_limit=(-0.3, 0.3), val_shift_limit=0.1, p=0.2),
         ]
     )
 
@@ -89,12 +79,21 @@ class CustomDaset(torch.utils.data.Dataset):
             the output will ve (augmented1, augmented2)
     """
 
-    def __init__(self, path_to_images, metadata, return_original=False):
+    def __init__(
+        self,
+        path_to_images,
+        metadata,
+        return_original=False,
+        min_max_croped_size: tuple = (80, 85),
+        normalizing_factor: int = 6000,
+    ):
 
         super().__init__()
         self.metadata = metadata
         self.path_to_images = path_to_images
         self.return_original = return_original
+        self.min_max_croped_size = min_max_croped_size
+        self.normalizing_factor = normalizing_factor
 
     def __len__(self):
 
@@ -103,19 +102,17 @@ class CustomDaset(torch.utils.data.Dataset):
     def __getitem__(self, index):
 
         # Load and transform input image
-        image = EDA.read_numpy_image(
-            self.path_to_images + self.metadata.Image.tolist()[index]
-        )
+        image = EDA.read_numpy_image(self.path_to_images + self.metadata.Image.tolist()[index])
 
         if len(image.shape) == 4:
             image = EDA.less_cloudy_image(image)
 
-        image = np.clip(image[:3], 0, 6000) / 6000
+        image = np.clip(image[:3], 0, self.normalizing_factor) / self.normalizing_factor
         original_image = image.copy()
         image = image.transpose(1, 2, 0).astype(np.float32)
 
         # Data Augmentation
-        image_1, image_2 = data_augmentation(image)
+        image_1, image_2 = data_augmentation(image, min_max_croped_size=self.min_max_croped_size)
 
         # Set data types compatible with pytorch
         image = image.astype(np.float32).transpose(2, 0, 1)
@@ -148,9 +145,9 @@ def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10) -
         image_1 = image_1.transpose(1, 2, 0)
         image_2 = image_2.transpose(1, 2, 0)
 
-        ax[0, i].imshow(image + 0.1)
-        ax[1, i].imshow(image_1 + 0.1)
-        ax[2, i].imshow(image_2 + 0.1)
+        ax[0, i].imshow(image)
+        ax[1, i].imshow(image_1)
+        ax[2, i].imshow(image_2)
 
         ax[0, i].set_title("Originale")
         ax[1, i].set_title("Augmented 1")
@@ -313,15 +310,9 @@ def train_model(
     """
 
     # Definte paths to save and load model
-    checkpoint_path = (
-        f"{metadata_kwargs['path_to_save_model']}/checkpoint_{wandb_kwargs['name']}.pt"
-    )
-    model_path = (
-        f"{metadata_kwargs['path_to_save_model']}/model_{wandb_kwargs['name']}.pth"
-    )
-    checkpoint_load_path = (
-        f"{metadata_kwargs['path_to_load_model']}/checkpoint_{wandb_kwargs['name']}.pt"
-    )
+    checkpoint_path = f"{metadata_kwargs['path_to_save_model']}/checkpoint_{wandb_kwargs['name']}.pt"
+    model_path = f"{metadata_kwargs['path_to_save_model']}/model_{wandb_kwargs['name']}.pth"
+    checkpoint_load_path = f"{metadata_kwargs['path_to_load_model']}/checkpoint_{wandb_kwargs['name']}.pt"
 
     # Create folder to save model
     if metadata_kwargs["path_to_save_model"]:
@@ -449,12 +440,26 @@ def run_train(
     ds_train = CustomDaset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_train"],
+        min_max_croped_size=(25, 26),
+        normalizing_factor=255,
     )
 
     ds_test = CustomDaset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_test"],
+        min_max_croped_size=(25, 26),
+        normalizing_factor=255,
     )
+
+    ds_train_sample = CustomDaset(
+        metadata_kwargs["path_to_images"],
+        metadata_kwargs["metadata_train"],
+        return_original=True,
+        min_max_croped_size=(28, 29),
+        normalizing_factor=255,
+    )
+
+    visualize_augmented_images(ds_train_sample)
 
     # define dataloader
     train_dataloader = torch.utils.data.DataLoader(
@@ -472,11 +477,11 @@ def run_train(
         drop_last=True,
     )
 
-    # Instance Deep Lab model    # Model
+    # Instance Deep Lab model
     model = SimCLR(
         proj_hidden_dim=512,
-        proj_output_dim=512,
-        backbone="resnet50",
+        proj_output_dim=128,
+        backbone=wandb_kwargs["config"]["backbone"],
     )
 
     model.to(metadata_kwargs["device"])
@@ -495,9 +500,7 @@ def run_train(
     )
 
     # learning scheduler
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=wandb_kwargs["config"]["epochs"], eta_min=4e-08
-    )
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=wandb_kwargs["config"]["epochs"], eta_min=4e-08)
 
     train_model(
         train_dataloader,
