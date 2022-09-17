@@ -29,8 +29,8 @@ class LinearClassifier(nn.Module):
         super(LinearClassifier, self).__init__()
 
         self.backbone = BACKBONES[backbone]
-        self.backbone.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=2, bias=False)
-        self.backbone.maxpool = nn.Identity()
+        # self.backbone.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=2, bias=False)
+        # self.backbone.maxpool = nn.Identity()
         self.backbone.fc = nn.Identity()
 
         self.fc = nn.Sequential(
