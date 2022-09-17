@@ -440,14 +440,14 @@ def run_train(
     ds_train = CustomDaset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_train"],
-        min_max_croped_size=(25, 26),
+        min_max_croped_size=(30, 31),
         normalizing_factor=255,
     )
 
     ds_test = CustomDaset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_test"],
-        min_max_croped_size=(25, 26),
+        min_max_croped_size=(30, 31),
         normalizing_factor=255,
     )
 
