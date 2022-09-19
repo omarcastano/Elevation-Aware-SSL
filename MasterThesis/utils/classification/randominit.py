@@ -144,8 +144,8 @@ def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10, c
     for i in range(n):
         original, augmented, label = dataset[i]
 
-        augmented = augmented.transpose(1, 2, 0)
-        original = original.transpose(1, 2, 0)
+        augmented = np.numpy(augmented).transpose(1, 2, 0)
+        original = np.numpy(original).transpose(1, 2, 0)
 
         ax[1, i].imshow(augmented)
         ax[0, i].imshow(original)
