@@ -15,8 +15,12 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torch import optim
 from MasterThesis.models.classification.simclr import SimCLR
-from MasterThesis.utils.classification.losses import NTXentLoss
+
+# from MasterThesis.utils.classification.losses import NTXentLoss
+from lightly.loss import NTXentLoss
 from pl_bolts.optimizers import LARS
+from torchvision import transforms
+
 
 # Data loader
 def data_augmentation(img, min_max_croped_size):
@@ -36,29 +40,19 @@ def data_augmentation(img, min_max_croped_size):
             example: input_size=[100,100]
     """
 
-    img = np.float32(img)
-
-    input_size = img.shape
-
-    transform = album.Compose(
-        transforms=[
-            # album.VerticalFlip(p=0.5),
-            album.HorizontalFlip(p=0.5),
-            # album.RandomRotate90(p=0.5),
-            album.RandomSizedCrop(min_max_height=min_max_croped_size, height=input_size[0], width=input_size[1], p=0.5),
-            album.ToGray(always_apply=False, p=0.5),
-            album.GaussianBlur(blur_limit=(1, 5), p=0.3),
-            album.HueSaturationValue(hue_shift_limit=0.6, sat_shift_limit=(-0.4, 0.4), val_shift_limit=0.1, p=0.3),
+    augmentation = transforms.Compose(
+        [
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomResizedCrop(size=img.shape[1], scale=(0.9, 1.0)),
+            transforms.RandomApply([transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1)], p=0.8),
+            transforms.RandomGrayscale(p=0.5),
+            # transforms.GaussianBlur(kernel_size=5),
         ]
     )
 
-    transformed_img = transform(image=img)
-    img1 = transformed_img["image"]
+    img1 = augmentation(img)
 
-    transformed_img = transform(image=img)
-    img2 = transformed_img["image"]
-
-    return img1, img2
+    return img1
 
 
 class CustomDaset(torch.utils.data.Dataset):
@@ -108,16 +102,14 @@ class CustomDaset(torch.utils.data.Dataset):
             image = EDA.less_cloudy_image(image)
 
         image = np.clip(image[:3], 0, self.normalizing_factor) / self.normalizing_factor
+
         original_image = image.copy()
-        image = image.transpose(1, 2, 0).astype(np.float32)
+
+        image = torch.from_numpy(image.astype(np.float32))
 
         # Data Augmentation
-        image_1, image_2 = data_augmentation(image, min_max_croped_size=self.min_max_croped_size)
-
-        # Set data types compatible with pytorch
-        image = image.astype(np.float32).transpose(2, 0, 1)
-        image_1 = image_1.astype(np.float32).transpose(2, 0, 1)
-        image_2 = image_2.astype(np.float32).transpose(2, 0, 1)
+        image_1 = data_augmentation(image, min_max_croped_size=self.min_max_croped_size)
+        image_2 = data_augmentation(image, min_max_croped_size=self.min_max_croped_size)
 
         if self.return_original:
             return original_image, image_1, image_2
@@ -141,9 +133,9 @@ def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10) -
     for i in range(n):
         image, image_1, image_2 = dataset[i]
 
-        image = image.transpose(1, 2, 0)
-        image_1 = image_1.transpose(1, 2, 0)
-        image_2 = image_2.transpose(1, 2, 0)
+        image = np.array(image).transpose(1, 2, 0)
+        image_1 = np.array(image_1).transpose(1, 2, 0)
+        image_2 = np.array(image_2).transpose(1, 2, 0)
 
         ax[0, i].imshow(image)
         ax[1, i].imshow(image_1)
@@ -359,7 +351,6 @@ def train_model(
             wandb.log({"Train Loss": train_loss, "Test Loss": test_loss})
             print("------------------------------------------------------------- \n")
 
-            print(train_loss)
             # Save the model
             if metadata_kwargs["path_to_save_model"]:
                 torch.save(
@@ -479,7 +470,7 @@ def run_train(
 
     # Instance Deep Lab model
     model = SimCLR(
-        proj_hidden_dim=128,
+        proj_hidden_dim=512,
         proj_output_dim=128,
         backbone=wandb_kwargs["config"]["backbone"],
     )
@@ -488,16 +479,22 @@ def run_train(
 
     # loss  functiction
     loss = NTXentLoss(
-        tau=wandb_kwargs["config"]["temperature"],
+        temperature=wandb_kwargs["config"]["temperature"],
     )
 
     # Optimizer
-    optimizer = LARS(
+    optimizer = optim.AdamW(
         model.parameters(),
-        weight_decay=wandb_kwargs["config"]["weight_decay"],
         lr=wandb_kwargs["config"]["learning_rate"],
-        momentum=0.9,
+        weight_decay=wandb_kwargs["config"]["weight_decay"],
     )
+
+    # optimizer = LARS(
+    #    model.parameters(),
+    #    weight_decay=wandb_kwargs["config"]["weight_decay"],
+    #    lr=wandb_kwargs["config"]["learning_rate"],
+    #    momentum=0.9,
+    # )
 
     # learning scheduler
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=wandb_kwargs["config"]["epochs"], eta_min=4e-08)

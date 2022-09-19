@@ -144,10 +144,6 @@ def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10, c
         classes_name: name of each class
     """
 
-    cmap = {i: [np.random.random(), np.random.random(), np.random.random(), 1] for i in range(len(classes_name))}
-    labels_map = {i: name for i, name in enumerate(classes_name)}
-    patches = [mpatches.Patch(color=cmap[i], label=labels_map[i]) for i in cmap]
-
     fig, ax = plt.subplots(2, n, figsize=(32, 7))
 
     for i in range(n):
