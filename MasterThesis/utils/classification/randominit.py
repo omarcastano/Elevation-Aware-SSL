@@ -26,10 +26,10 @@ from MasterThesis.models.classification.randominit import (
 )
 from sklearn.model_selection import StratifiedKFold
 from IPython.display import clear_output
+from torchvision import transforms
 
 
-def data_augmentation(image, input_size, min_max_croped_size):
-
+def data_augmentation(img, input_size, min_max_croped_size):
     """
     Data augmentation such as vertical and horizontal flip,
     random rotation and random sized crop.
@@ -43,23 +43,19 @@ def data_augmentation(image, input_size, min_max_croped_size):
             example: input_size=[100,100]
     """
 
-    aug = album.Compose(
-        transforms=[
-            # album.VerticalFlip(p=0.5),
-            album.HorizontalFlip(p=0.5),
-            # album.RandomRotate90(p=0.5),
-            # album.RandomSizedCrop(min_max_height=min_max_croped_size, height=input_size[0], width=input_size[1], p=0.5),
-            album.ToGray(always_apply=False, p=0.5),
-            album.GaussianBlur(blur_limit=(1, 3), p=0.2),
-            album.HueSaturationValue(hue_shift_limit=0.3, sat_shift_limit=(-0.2, 0.2), val_shift_limit=0.1, p=0.2),
+    augmentation = transforms.Compose(
+        [
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomResizedCrop(size=img.shape[1], scale=(0.9, 1.0)),
+            transforms.RandomApply([transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.0)], p=0.2),
+            transforms.RandomGrayscale(p=0.5),
+            # transforms.GaussianBlur(kernel_size=5),
         ]
     )
 
-    augmented = aug(image=image)
+    img1 = augmentation(img)
 
-    image = augmented["image"]
-
-    return image
+    return img1
 
 
 class CustomDaset(torch.utils.data.Dataset):
@@ -110,8 +106,10 @@ class CustomDaset(torch.utils.data.Dataset):
             image = EDA.less_cloudy_image(image)
 
         image = np.clip(image[:3], 0, self.normalizing_factor) / self.normalizing_factor
+
         original_image = image.copy()
-        image = image.transpose(1, 2, 0).astype(np.float32)
+
+        image = torch.from_numpy(image.astype(np.float32))
 
         # Load label
         label = self.metadata.Labels.tolist()[index]
@@ -121,9 +119,6 @@ class CustomDaset(torch.utils.data.Dataset):
             image = data_augmentation(image, image.shape, self.min_max_croped_size)
 
         # Set data types compatible with pytorch
-        # label = torch.from_numpy(label).long()
-        image = image.astype(np.float32).transpose(2, 0, 1)
-
         if self.return_original:
 
             return original_image, image, label

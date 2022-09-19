@@ -223,7 +223,7 @@ def test_one_epoch(
 
     running_loss = 0
 
-    model.eval()
+    # model.eval()
 
     with torch.no_grad():
         for epoch, (input1, input2) in enumerate(tqdm(test_loader), 1):
