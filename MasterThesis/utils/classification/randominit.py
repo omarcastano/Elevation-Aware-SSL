@@ -29,7 +29,7 @@ from IPython.display import clear_output
 from torchvision import transforms
 
 
-def data_augmentation(img, input_size, min_max_croped_size):
+def data_augmentation(img):
     """
     Data augmentation such as vertical and horizontal flip,
     random rotation and random sized crop.
@@ -37,19 +37,16 @@ def data_augmentation(img, input_size, min_max_croped_size):
     Argumetns:
         image: 3D numpy array
             input image with shape (H,W,C)
-        input_size: list [H,W].
-            python list with the width and heigth
-            of the output images and labels.
-            example: input_size=[100,100]
     """
 
     augmentation = transforms.Compose(
         [
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomResizedCrop(size=img.shape[1], scale=(0.9, 1.0)),
-            transforms.RandomApply([transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.0)], p=0.2),
-            transforms.RandomGrayscale(p=0.5),
-            # transforms.GaussianBlur(kernel_size=5),
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomVerticalFlip(p=0.5),
+            transforms.RandomResizedCrop(size=img.shape[1], scale=(0.7, 1.0)),
+            transforms.RandomApply([transforms.ColorJitter(brightness=0.0, contrast=0.0, saturation=0.0, hue=0.1)], p=0.2),
+            transforms.RandomGrayscale(p=0.2),
+            transforms.GaussianBlur(kernel_size=3),
         ]
     )
 
@@ -69,7 +66,6 @@ class CustomDaset(torch.utils.data.Dataset):
         path_to_images: str,
         metadata: pd.DataFrame,
         return_original: bool = False,
-        min_max_croped_size: tuple = (80, 85),
         normalizing_factor: int = 6000,
         augmentation: bool = False,
     ):
@@ -89,7 +85,6 @@ class CustomDaset(torch.utils.data.Dataset):
         self.metadata = metadata
         self.path_to_images = path_to_images
         self.return_original = return_original
-        self.min_max_croped_size = min_max_croped_size
         self.normalizing_factor = normalizing_factor
         self.augmentation = augmentation
 
@@ -116,7 +111,7 @@ class CustomDaset(torch.utils.data.Dataset):
 
         if self.augmentation:
             # Data Augmentation
-            image = data_augmentation(image, image.shape, self.min_max_croped_size)
+            image = data_augmentation(image)
 
         # Set data types compatible with pytorch
         if self.return_original:
@@ -532,16 +527,14 @@ def run_train(
     ds_train = CustomDaset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_train"],
-        min_max_croped_size=(28, 29),
-        normalizing_factor=255,
+        normalizing_factor=6000,
         augmentation=True,
     )
 
     ds_test = CustomDaset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_test"],
-        min_max_croped_size=(28, 29),
-        normalizing_factor=255,
+        normalizing_factor=6000,
         augmentation=False,
     )
 
@@ -549,8 +542,7 @@ def run_train(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_train"],
         return_original=True,
-        min_max_croped_size=(28, 29),
-        normalizing_factor=255,
+        normalizing_factor=6000,
         augmentation=True,
     )
 

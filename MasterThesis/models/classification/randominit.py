@@ -29,9 +29,8 @@ class LinearClassifier(nn.Module):
         super(LinearClassifier, self).__init__()
 
         self.backbone = BACKBONES[backbone]
-        self.backbone.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=2, bias=False)
-
-        self.backbone.maxpool = nn.Identity()
+        # self.backbone.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=2, bias=False)
+        # self.backbone.maxpool = nn.Identity()
         self.backbone.fc = nn.Identity()
 
         self.fc = nn.Sequential(
@@ -67,8 +66,10 @@ class NoneLinearClassifier(nn.Module):
         self.fc = nn.Sequential(
             nn.Linear(in_features=self.backbone.inplanes, out_features=n_hidden),
             nn.ReLU(),
+            nn.BatchNorm1d(n_hidden),
             nn.Linear(in_features=n_hidden, out_features=n_hidden),
             nn.ReLU(),
+            nn.BatchNorm1d(n_hidden),
             nn.Linear(in_features=n_hidden, out_features=num_classes),
         )
 

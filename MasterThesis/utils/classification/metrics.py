@@ -198,8 +198,6 @@ class threshold_metric_evaluation:
 
         self.result = pd.DataFrame(result)
 
-        print(self.result)
-
     def plot_PR_curve(self, color="class"):
 
         result = self.result.copy()

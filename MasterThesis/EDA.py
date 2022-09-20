@@ -17,6 +17,7 @@ import earthpy.spatial as es
 import earthpy.plot as ep
 from tqdm import tqdm
 import multiprocessing as mp
+from typing import List, Tuple
 
 # Function that reads geotiff
 def read_geotiff_image(path):
@@ -410,12 +411,13 @@ def visualize_images_and_masks(
 
 # helper function for data visualization#
 def visualize_images_and_labels(
-    path_to_images,
-    metadata,
-    n=5,
-    temporal_dim=False,
-    rgb_bands=[0, 1, 2],
-    figsize=(10, 5),
+    path_to_images: str,
+    metadata: pd.DataFrame,
+    n: int = 5,
+    temporal_dim: bool = False,
+    rgb_bands: List[int] = [0, 1, 2],
+    scale_factor: int = 6000,
+    figsize: Tuple = (10, 5),
 ):
 
     """
@@ -436,6 +438,8 @@ def visualize_images_and_labels(
             shape (T,C,W,H)
         rgb_bands: List, default=[0,1,2]
             list with the indices of the rgb bands
+        scale_factor: int, default=6000
+            factor to scale images
         n: int
             number of images to plot
         figsize: tuple
@@ -460,7 +464,7 @@ def visualize_images_and_labels(
         for i in range(n):
 
             img = read_numpy_image(path_to_images + images[i])
-            ax[i].imshow(img.transpose(1, 2, 0))
+            ax[i].imshow(np.clip(img[rgb_bands].transpose(1, 2, 0), 0, scale_factor) / scale_factor)
             ax[i].axis("off")
             ax[i].set_title(f"{classes[i]} ({labels[i]})")
 
