@@ -44,7 +44,7 @@ def data_augmentation(img, min_max_croped_size):
         [
             transforms.RandomHorizontalFlip(),
             transforms.RandomResizedCrop(size=img.shape[1], scale=(0.9, 1.0)),
-            # transforms.RandomApply([transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1)], p=0.8),
+            transforms.RandomApply([transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1)], p=0.8),
             transforms.RandomGrayscale(p=0.5),
             transforms.GaussianBlur(kernel_size=5),
         ]
@@ -483,18 +483,18 @@ def run_train(
     )
 
     # Optimizer
-    optimizer = optim.AdamW(
-        model.parameters(),
-        lr=wandb_kwargs["config"]["learning_rate"],
-        weight_decay=wandb_kwargs["config"]["weight_decay"],
-    )
-
-    # optimizer = LARS(
+    # optimizer = optim.AdamW(
     #    model.parameters(),
-    #    weight_decay=wandb_kwargs["config"]["weight_decay"],
     #    lr=wandb_kwargs["config"]["learning_rate"],
-    #    momentum=0.9,
+    #    weight_decay=wandb_kwargs["config"]["weight_decay"],
     # )
+
+    optimizer = LARS(
+        model.parameters(),
+        weight_decay=wandb_kwargs["config"]["weight_decay"],
+        lr=wandb_kwargs["config"]["learning_rate"],
+        momentum=0.9,
+    )
 
     # learning scheduler
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=wandb_kwargs["config"]["epochs"], eta_min=4e-08)

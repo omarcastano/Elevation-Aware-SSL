@@ -424,7 +424,7 @@ def train_model(
                     parameters.requires_grad = True
 
                 for g in optimizer.param_groups:
-                    g["lr"] = 0.00001
+                    g["lr"] = wandb_kwargs["config"]["lr_ft"]
 
             # Save the model
             if metadata_kwargs["path_to_save_model"]:
