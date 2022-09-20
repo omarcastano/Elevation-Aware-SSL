@@ -493,7 +493,7 @@ def run_train(
         model.parameters(),
         weight_decay=wandb_kwargs["config"]["weight_decay"],
         lr=wandb_kwargs["config"]["learning_rate"],
-        momentum=0.9,
+        momentum=0.0,
     )
 
     # learning scheduler
