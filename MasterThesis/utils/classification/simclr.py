@@ -23,7 +23,7 @@ from torchvision import transforms
 
 
 # Data loader
-def data_augmentation(img, min_max_croped_size):
+def data_augmentation(img):
 
     """
     Data augmentation for such as vertical and horizontal flip,
@@ -78,7 +78,6 @@ class CustomDaset(torch.utils.data.Dataset):
         path_to_images,
         metadata,
         return_original=False,
-        min_max_croped_size: tuple = (80, 85),
         normalizing_factor: int = 6000,
     ):
 
@@ -86,7 +85,6 @@ class CustomDaset(torch.utils.data.Dataset):
         self.metadata = metadata
         self.path_to_images = path_to_images
         self.return_original = return_original
-        self.min_max_croped_size = min_max_croped_size
         self.normalizing_factor = normalizing_factor
 
     def __len__(self):
@@ -108,8 +106,8 @@ class CustomDaset(torch.utils.data.Dataset):
         image = torch.from_numpy(image.astype(np.float32))
 
         # Data Augmentation
-        image_1 = data_augmentation(image, min_max_croped_size=self.min_max_croped_size)
-        image_2 = data_augmentation(image, min_max_croped_size=self.min_max_croped_size)
+        image_1 = data_augmentation(image)
+        image_2 = data_augmentation(image)
 
         if self.return_original:
             return original_image, image_1, image_2
@@ -431,23 +429,20 @@ def run_train(
     ds_train = CustomDaset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_train"],
-        min_max_croped_size=(30, 31),
-        normalizing_factor=255,
+        normalizing_factor=6000,
     )
 
     ds_test = CustomDaset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_test"],
-        min_max_croped_size=(30, 31),
-        normalizing_factor=255,
+        normalizing_factor=6000,
     )
 
     ds_train_sample = CustomDaset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_train"],
         return_original=True,
-        min_max_croped_size=(28, 29),
-        normalizing_factor=255,
+        normalizing_factor=6000,
     )
 
     visualize_augmented_images(ds_train_sample)
@@ -483,17 +478,10 @@ def run_train(
     )
 
     # Optimizer
-    # optimizer = optim.AdamW(
-    #    model.parameters(),
-    #    lr=wandb_kwargs["config"]["learning_rate"],
-    #    weight_decay=wandb_kwargs["config"]["weight_decay"],
-    # )
-
-    optimizer = LARS(
+    optimizer = optim.AdamW(
         model.parameters(),
-        weight_decay=wandb_kwargs["config"]["weight_decay"],
         lr=wandb_kwargs["config"]["learning_rate"],
-        momentum=0.0,
+        weight_decay=wandb_kwargs["config"]["weight_decay"],
     )
 
     # learning scheduler
