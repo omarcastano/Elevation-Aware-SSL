@@ -46,7 +46,7 @@ def data_augmentation(img):
             transforms.RandomResizedCrop(size=img.shape[1], scale=(0.8, 1.0)),
             transforms.RandomApply([transforms.ColorJitter(brightness=0.0, contrast=0.0, saturation=0.0, hue=0.1)], p=0.2),
             transforms.RandomGrayscale(p=0.2),
-            transforms.GaussianBlur(kernel_size=3),
+            # transforms.GaussianBlur(kernel_size=3),
         ]
     )
 
@@ -677,7 +677,6 @@ def generate_metadata_train_test_stratified_cv(
     """
     Provides train/test indices to split data in train/test sets. Split
     dataset into k consecutive foldsenerate train and test dataset via k-fold setss
-
 
     Argguments:
     ----------
