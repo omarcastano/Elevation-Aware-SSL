@@ -5,7 +5,7 @@ from .deeplab_utils import ResNet
 from .deeplab_utils.sync_batchnorm.batchnorm import (
     SynchronizedBatchNorm2d,
 )
-from MasterThesis.models.deeplab_utils.encoder import Encoder
+from MasterThesis.models.segmentation.deeplab_utils.encoder import Encoder
 
 
 class Decoder(nn.Module):
@@ -30,9 +30,7 @@ class Decoder(nn.Module):
         low_level_feature = self.conv1(low_level_feature)
         low_level_feature = self.bn1(low_level_feature)
         low_level_feature = self.relu(low_level_feature)
-        x_4 = F.interpolate(
-            x, size=low_level_feature.size()[2:4], mode="bilinear", align_corners=True
-        )
+        x_4 = F.interpolate(x, size=low_level_feature.size()[2:4], mode="bilinear", align_corners=True)
         x_4_cat = torch.cat((x_4, low_level_feature), dim=1)
         x_4_cat = self.conv2(x_4_cat)
         x_4_cat = self.bn2(x_4_cat)
@@ -57,15 +55,7 @@ class Decoder(nn.Module):
 
 class DeepLab(nn.Module):
     def __init__(
-        self,
-        num_classes=2,
-        in_channels=3,
-        arch="resnet101",
-        output_stride=16,
-        bn_momentum=0.9,
-        freeze_bn=False,
-        pretrained=False,
-        **kwargs
+        self, num_classes=2, in_channels=3, arch="resnet101", output_stride=16, bn_momentum=0.9, freeze_bn=False, pretrained=False, **kwargs
     ):
         super(DeepLab, self).__init__(**kwargs)
         self.model_name = "deeplabv3plus_" + arch
@@ -78,15 +68,11 @@ class DeepLab(nn.Module):
         elif arch == "resnet50":
             self.backbone = ResNet.resnet50(bn_momentum, pretrained)
             if in_channels != 3:
-                self.backbone.conv1 = nn.Conv2d(
-                    in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False
-                )
+                self.backbone.conv1 = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
         elif arch == "resnet101":
             self.backbone = ResNet.resnet101(bn_momentum, pretrained)
             if in_channels != 3:
-                self.backbone.conv1 = nn.Conv2d(
-                    in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False
-                )
+                self.backbone.conv1 = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
 
         self.encoder = Encoder(bn_momentum, output_stride)
         self.decoder = Decoder(num_classes, bn_momentum)
@@ -96,9 +82,7 @@ class DeepLab(nn.Module):
 
         x = self.encoder(x)
         predict = self.decoder(x, low_level_features)
-        output = F.interpolate(
-            predict, size=input.size()[2:4], mode="bilinear", align_corners=True
-        )
+        output = F.interpolate(predict, size=input.size()[2:4], mode="bilinear", align_corners=True)
         return output
 
     def freeze_bn(self):
@@ -129,9 +113,7 @@ class Decoder_without_last_conv(nn.Module):
         low_level_feature = self.conv1(low_level_feature)
         low_level_feature = self.bn1(low_level_feature)
         low_level_feature = self.relu(low_level_feature)
-        x_4 = F.interpolate(
-            x, size=low_level_feature.size()[2:4], mode="bilinear", align_corners=True
-        )
+        x_4 = F.interpolate(x, size=low_level_feature.size()[2:4], mode="bilinear", align_corners=True)
         x_4_cat = torch.cat((x_4, low_level_feature), dim=1)
         x_4_cat = self.conv2(x_4_cat)
         x_4_cat = self.bn2(x_4_cat)

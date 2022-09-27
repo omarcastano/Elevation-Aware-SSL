@@ -335,6 +335,7 @@ def visualize_images_and_masks(
     temporal_dim=True,
     n=5,
     figsize=(10, 5),
+    brightness=0.0,
 ):
 
     """
@@ -375,7 +376,7 @@ def visualize_images_and_masks(
         for i in range(n):
             img = read_numpy_image(path_to_images + metadata["Image"].sample(n, random_state=seed).values[i])
             label = read_geotiff_image(path_to_label + metadata["Mask"].sample(n, random_state=seed).values[i])
-            ax[0, i].imshow(np.clip(img[0][[0, 1, 2]].transpose(1, 2, 0), 0, 6000) / 6000)
+            ax[0, i].imshow(np.clip(img[0][[0, 1, 2]].transpose(1, 2, 0), 0, 6000) / 6000 + brightness)
             ax[1, i].imshow(label)
             arrayShow = np.array([[cmap[i] for i in j] for j in label])
             ax[1, i].imshow(arrayShow)
@@ -390,9 +391,9 @@ def visualize_images_and_masks(
 
     else:
         for i in range(n):
-            img = read_numpy_image(path_to_images + metadata["Image"].sample(n, random_state=seed).values[i])
-            label = read_geotiff_image(path_to_label + metadata["Mask"].sample(n, random_state=seed).values[i])
-            ax[0, i].imshow(np.clip(img[0:3].transpose(1, 2, 0), 0, 6000) / 6000)
+            img = read_numpy_image(path_to_images + metadata["Image"].values[i])
+            label = read_geotiff_image(path_to_label + metadata["Mask"].values[i])
+            ax[0, i].imshow(np.clip(img[0:3].transpose(1, 2, 0), 0, 6000) / 6000 + brightness)
             ax[1, i].imshow(label)
 
             arrayShow = np.array([[cmap[i] for i in j] for j in label])
@@ -405,6 +406,8 @@ def visualize_images_and_masks(
                 markerscale=30,
                 fontsize="xx-large",
             )
+            ax[0, i].axis("off")
+            ax[1, i].axis("off")
 
     return fig
 

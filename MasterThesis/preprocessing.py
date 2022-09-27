@@ -80,8 +80,8 @@ def create_shapefiel_from_polygons(
 def polygons_intersection(
     shapefile1,
     shapefile2,
+    unique_labels,
     chip_name=None,
-    group_by="elemento",
     path_to_save=None,
     crs=None,
 ):
@@ -96,11 +96,10 @@ def polygons_intersection(
         either the path to the folder where a shapefile is stored or
         a geopandas dataframe with the polygons. Here you must provide the
         squared polygons.
+    unique_labels: list.
+        list with the name of classes.
     chip_name: string:
         unique id for each chip.
-    group_by: string.
-        column name from the attribute table of shapefiel1 which will be used to create
-        class labels.
     path_to_save: string, optional (default=None)
         path to the folder where the shapefile which contains the
         intersection will be stored
@@ -115,9 +114,6 @@ def polygons_intersection(
     if type(shapefile2) == str:
         shapefile2 = gpd.read_file(shapefile2)
 
-    unique_labels = shapefile1[group_by].unique()
-    unique_labels.sort()
-
     label_num = np.arange(len(unique_labels))
 
     chip_references = []
@@ -125,20 +121,14 @@ def polygons_intersection(
     labels = []
     for label in unique_labels:
         chip_references.append(chip_name)
-        sipra_mask = shapefile1.loc[shapefile1[group_by] == label, :]
+        sipra_mask = shapefile1.loc[shapefile1["elemento"] == label, :]
 
-        inter = shapefile2.sample(sipra_mask.shape[0], replace=True).intersection(
-            sipra_mask, align=False
-        )
+        inter = shapefile2.sample(sipra_mask.shape[0], replace=True).intersection(sipra_mask, align=False)
         inter = inter[~inter.is_empty]
 
         if inter.shape[0] != 0:
-            intersection = gpd.GeoDataFrame(
-                inter, columns=["geometry"], crs=shapefile1.crs
-            )
-            intersection = gpd.GeoDataFrame(
-                intersection.dissolve(), columns=["geometry"], crs=shapefile1.crs
-            )
+            intersection = gpd.GeoDataFrame(inter, columns=["geometry"], crs=shapefile1.crs)
+            intersection = gpd.GeoDataFrame(intersection.dissolve(), columns=["geometry"], crs=shapefile1.crs)
             geometry.append(intersection.geometry.values[0])
         else:
             geometry.append(Polygon())
@@ -209,9 +199,7 @@ def from_array_to_geotiff(path_to_save, array, path_to_chip_metadata, crs=3116):
         DataSet.GetRasterBand(i).WriteArray(image / np.max(image))
 
 
-def shapefiel_to_geotiff(
-    path_input_shp, path_output_raster, pixel_size, attribute, no_data_value=-999
-):
+def shapefiel_to_geotiff(path_input_shp, path_output_raster, pixel_size, attribute, no_data_value=-999):
 
     """
     This function allow you to convert a shapefile into a Geotiff. In order to use this function
@@ -275,11 +263,11 @@ def crop_geotiff_chip(
     path_to_save_cropped_geotiff,
     new_shape=(100, 100),
     crs=3116,
-    no_data_value=-999,
+    no_data_value=999,
 ):
 
     """
-    Function center crops a geotiff image geotiff and then save the cropped geotiff using
+    Function center crops a geotiff image and then save the cropped geotiff using
     coordinates stored in chip metadata.
 
     Arguments:
@@ -323,9 +311,7 @@ def crop_geotiff_chip(
         arr_out = arr_out[:, 0:-1]
 
     driver = gdal.GetDriverByName("GTiff")
-    outdata = driver.Create(
-        path_to_save_cropped_geotiff, new_shape[1], new_shape[0], 1, gdal.GDT_Int16
-    )
+    outdata = driver.Create(path_to_save_cropped_geotiff, new_shape[1], new_shape[0], 1, gdal.GDT_Int16)
 
     geotf = list(ds.GetGeoTransform())
     geotf[0] = Point.GetX()
@@ -333,9 +319,7 @@ def crop_geotiff_chip(
 
     outdata.SetGeoTransform(tuple(geotf))  ##sets same geotransform as input
     outdata.SetProjection(ds.GetProjection())  ##sets same projection as input
-    outdata.GetRasterBand(1).SetNoDataValue(
-        no_data_value
-    )  ##if you want these values transparent
+    outdata.GetRasterBand(1).SetNoDataValue(no_data_value)  ##if you want these values transparent
     outdata.GetRasterBand(1).WriteArray(arr_out)
     outdata.FlushCache()
 
