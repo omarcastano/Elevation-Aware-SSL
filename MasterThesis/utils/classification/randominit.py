@@ -566,7 +566,7 @@ def run_train(
 
     # Instance Deep Lab model
     torch.manual_seed(42)
-    clf_model = LinearClassifier(
+    clf_model = NoneLinearClassifier(
         num_classes=wandb_kwargs["config"]["num_classes"],
         backbone=wandb_kwargs["config"]["backbone"],
     )
