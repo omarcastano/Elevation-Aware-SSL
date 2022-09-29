@@ -18,7 +18,6 @@ from MasterThesis.models.classification.simclr import SimCLR
 
 # from MasterThesis.utils.classification.losses import NTXentLoss
 from lightly.loss import NTXentLoss
-from pl_bolts.optimizers import LARS
 from torchvision import transforms
 
 
@@ -44,8 +43,8 @@ def data_augmentation(img):
         [
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomVerticalFlip(p=0.5),
-            transforms.RandomResizedCrop(size=img.shape[1], scale=(0.7, 1.0)),
-            transforms.RandomApply([transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.1)], p=0.5),
+            transforms.RandomResizedCrop(size=img.shape[1], scale=(0.9, 1.0)),
+            transforms.RandomApply([transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1)], p=0.5),
             transforms.RandomGrayscale(p=0.5),
             # transforms.GaussianBlur(kernel_size=5),
         ]
