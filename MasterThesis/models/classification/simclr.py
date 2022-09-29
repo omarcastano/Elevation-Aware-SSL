@@ -12,22 +12,36 @@ BACKBONES = {
 class SimCLR(nn.Module):
 
     """
-    SimCLR model
+    SimCLR model using ResNet as backbone
+
+    Arguments:
+    ----------
+        backbone: string, default = "resnet50"
+            backbone to be pre-trained
+        proj_hidden_dim: integer, default=512
+            number of hidden units
+        proj_output_dim: integer, default=128
+            number of output units
+        cifar: boolean, default=False
+            If True removes the first max pooling layer, and the kernel in the
+            first convolutional layer is change from 7x7 to 3x3.
     """
 
     def __init__(
         self,
         backbone: str = "resnet50",
+        proj_hidden_dim: int = 128,
         proj_output_dim: int = 512,
-        proj_hidden_dim: int = 512,
-        temperature: float = 0.5,
+        cifar: bool = False,
     ) -> None:
 
         super(SimCLR, self).__init__()
 
         self.backbone = BACKBONES[backbone]
-        # self.backbone.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=2, bias=False)
-        # self.backbone.maxpool = nn.Identity()
+        if cifar:
+            self.backbone.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=2, bias=False)
+            self.backbone.maxpool = nn.Identity()
+
         self.backbone.fc = nn.Identity()
 
         self.projector = nn.Sequential(

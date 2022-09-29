@@ -56,7 +56,7 @@ def data_augmentation(img):
     return img1
 
 
-class CustomDaset(torch.utils.data.Dataset):
+class CustomDataset(torch.utils.data.Dataset):
 
     """
     This class creates a custom dataset for implementing
@@ -376,8 +376,7 @@ def run_train(
 ):
 
     """
-    Run a experiment where a DeepLabv3+ model is trained using resnet50 as backbone. A pre-trained
-    encoder can be loaded and finetune during the training.
+    Pre-train a backbone using SimCLR methodology
 
     Arguments:
     ---------
@@ -427,23 +426,23 @@ def run_train(
         print("--------------------")
 
     # Define dataset
-    ds_train = CustomDaset(
+    ds_train = CustomDataset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_train"],
-        normalizing_factor=6000,
+        normalizing_factor=wandb_kwargs["config"]["normalizing_factor"],
     )
 
-    ds_test = CustomDaset(
+    ds_test = CustomDataset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_test"],
-        normalizing_factor=6000,
+        normalizing_factor=wandb_kwargs["config"]["normalizing_factor"],
     )
 
-    ds_train_sample = CustomDaset(
+    ds_train_sample = CustomDataset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_train"],
         return_original=True,
-        normalizing_factor=6000,
+        normalizing_factor=wandb_kwargs["config"]["normalizing_factor"],
     )
 
     visualize_augmented_images(ds_train_sample)
@@ -469,6 +468,7 @@ def run_train(
         proj_hidden_dim=512,
         proj_output_dim=128,
         backbone=wandb_kwargs["config"]["backbone"],
+        cifar=wandb_kwargs["config"]["cifar"],
     )
 
     model.to(metadata_kwargs["device"])

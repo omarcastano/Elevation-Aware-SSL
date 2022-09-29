@@ -18,19 +18,26 @@ class LinearClassifier(nn.Module):
 
     """
     Linear Classifier model on top a ResNet model
+
+    Arguments:
+    ----------
+        backbone: string, default = "resnet50"
+            backbone to be pre-trained
+        num_classes: integer, default=None
+            number of different classes
+        cifar: boolean, default=False
+            If True removes the first max pooling layer, and the kernel in the
+            first convolutional layer is change from 7x7 to 3x3.
     """
 
-    def __init__(
-        self,
-        backbone: str = "resnet50",
-        num_classes: int = 3,
-    ) -> None:
+    def __init__(self, backbone: str = "resnet50", num_classes: int = None, cifar: bool = False) -> None:
 
         super(LinearClassifier, self).__init__()
 
         self.backbone = BACKBONES[backbone]
-        # self.backbone.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=2, bias=False)
-        # self.backbone.maxpool = nn.Identity()
+        if cifar:
+            self.backbone.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=2, bias=False)
+            self.backbone.maxpool = nn.Identity()
         self.backbone.fc = nn.Identity()
 
         self.fc = nn.Sequential(
@@ -49,18 +56,30 @@ class NoneLinearClassifier(nn.Module):
 
     """
     None Linear Classifier model on top a ResNet model
+
+    Arguments:
+    ----------
+        backbone: string, default = "resnet50"
+            backbone to be pre-trained
+        num_classes: integer, default=None
+            number of different classes
+        proj_hidden_dim: integer, default=512
+            number of hidden units
+        cifar: boolean, default=False
+            If True removes the first max pooling layer, and the kernel in the
+            first convolutional layer is change from 7x7 to 3x3.
     """
 
-    def __init__(
-        self,
-        backbone: str = "resnet50",
-        num_classes: int = 3,
-        n_hidden: int = 512,
-    ) -> None:
+    def __init__(self, backbone: str = "resnet50", num_classes: int = 3, n_hidden: int = 512, cifar: bool = False) -> None:
 
         super(NoneLinearClassifier, self).__init__()
 
         self.backbone = BACKBONES[backbone]
+
+        if cifar:
+            self.backbone.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=2, bias=False)
+            self.backbone.maxpool = nn.Identity()
+
         self.backbone.fc = nn.Identity()
 
         self.fc = nn.Sequential(

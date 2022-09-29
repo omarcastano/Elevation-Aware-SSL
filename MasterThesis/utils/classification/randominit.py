@@ -1,32 +1,30 @@
 # import libraries
-from ast import arguments
+import torch
+import os
+import wandb
+
 import numpy as np
 import pandas as pd
 import plotly.express as px
-import os
-import albumentations as album
 from MasterThesis import EDA
-import torch
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from torch.nn import Module
-import torch
 from tqdm import tqdm
 from typing import List, Union, Tuple
-import matplotlib.patches as mpatches
-import wandb
 from sklearn.model_selection import KFold
 from . import metrics
 from sklearn.metrics import confusion_matrix
 from MasterThesis.utils.classification import metrics
-from MasterThesis.utils.classification.metrics import threshold_metric_evaluation
+from sklearn.model_selection import StratifiedKFold
+from IPython.display import clear_output
+from torchvision import transforms
 from MasterThesis.models.classification.randominit import (
     LinearClassifier,
     NoneLinearClassifier,
 )
-from sklearn.model_selection import StratifiedKFold
-from IPython.display import clear_output
-from torchvision import transforms
+
+CLASSIFIERS = {"linear": LinearClassifier, "non_linear": NoneLinearClassifier}
 
 
 def data_augmentation(img):
@@ -55,7 +53,7 @@ def data_augmentation(img):
     return img1
 
 
-class CustomDaset(torch.utils.data.Dataset):
+class CustomDataset(torch.utils.data.Dataset):
 
     """
     This class creates a custom pytorch dataset
@@ -524,25 +522,25 @@ def run_train(
         print("run_id", run_id)
 
     # Define datasets
-    ds_train = CustomDaset(
+    ds_train = CustomDataset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_train"],
-        normalizing_factor=6000,
+        normalizing_factor=wandb_kwargs["config"]["normalizing_factor"],
         augmentation=True,
     )
 
-    ds_test = CustomDaset(
+    ds_test = CustomDataset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_test"],
-        normalizing_factor=6000,
+        normalizing_factor=wandb_kwargs["config"]["normalizing_factor"],
         augmentation=False,
     )
 
-    ds_train_sample = CustomDaset(
+    ds_train_sample = CustomDataset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_train"],
+        normalizing_factor=wandb_kwargs["config"]["normalizing_factor"],
         return_original=True,
-        normalizing_factor=6000,
         augmentation=True,
     )
 
@@ -566,9 +564,10 @@ def run_train(
 
     # Instance Deep Lab model
     torch.manual_seed(42)
-    clf_model = NoneLinearClassifier(
+    clf_model = CLASSIFIERS["config"]["classifier"](
         num_classes=wandb_kwargs["config"]["num_classes"],
         backbone=wandb_kwargs["config"]["backbone"],
+        cifar=wandb_kwargs["config"]["cifar"],
     )
     clf_model.to(metadata_kwargs["device"])
 
