@@ -42,7 +42,6 @@ def data_augmentation(img):
     augmentation = transforms.Compose(
         [
             transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomVerticalFlip(p=0.5),
             transforms.RandomResizedCrop(size=img.shape[1], scale=(0.9, 1.0)),
             transforms.RandomApply([transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1)], p=0.5),
             transforms.RandomGrayscale(p=0.5),
