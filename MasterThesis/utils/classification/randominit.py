@@ -564,7 +564,7 @@ def run_train(
 
     # Instance Deep Lab model
     torch.manual_seed(42)
-    clf_model = CLASSIFIERS[["config"]["classifier"]](
+    clf_model = CLASSIFIERS[wandb_kwargs["config"]["classifier"]](
         num_classes=wandb_kwargs["config"]["num_classes"],
         backbone=wandb_kwargs["config"]["backbone"],
         cifar=wandb_kwargs["config"]["cifar"],
