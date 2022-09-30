@@ -40,9 +40,9 @@ def data_augmentation(img):
     augmentation = transforms.Compose(
         [
             transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomVerticalFlip(p=0.5),
-            transforms.RandomResizedCrop(size=img.shape[1], scale=(0.8, 1.0)),
-            transforms.RandomApply([transforms.ColorJitter(brightness=0.0, contrast=0.0, saturation=0.0, hue=0.1)], p=0.2),
+            # transforms.RandomVerticalFlip(p=0.5),
+            transforms.RandomResizedCrop(size=img.shape[1], scale=(0.9, 1.0)),
+            transforms.RandomApply([transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1)], p=0.2),
             transforms.RandomGrayscale(p=0.2),
             # transforms.GaussianBlur(kernel_size=3),
         ]
