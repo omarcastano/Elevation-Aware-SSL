@@ -16,7 +16,7 @@ from sklearn.model_selection import KFold
 from . import metrics
 from sklearn.metrics import confusion_matrix
 from MasterThesis.utils.classification import metrics
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from IPython.display import clear_output
 from torchvision import transforms
 from MasterThesis.models.classification.randominit import (
@@ -694,9 +694,9 @@ def generate_metadata_train_test_stratified_cv(
 
     kf = StratifiedKFold(n_splits=n_split, shuffle=True, random_state=42)
 
-    X = np.arange(10)
     for train, test in kf.split(metadata, metadata["Labels"].tolist()):
-        metadata_train.append(metadata.iloc[train].sample(n_images_train, random_state=42).copy().reset_index(drop=True))
+        train_dataset, _ = train_test_split(metadata.iloc[train], train_size=train_size, random_state=42)
+        metadata_train.append(train_dataset)
         metadata_test.append(metadata.iloc[test].copy().reset_index(drop=True))
 
     return metadata_train, metadata_test
