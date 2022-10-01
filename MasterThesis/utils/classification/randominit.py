@@ -695,8 +695,8 @@ def generate_metadata_train_test_stratified_cv(
     kf = StratifiedKFold(n_splits=n_split, shuffle=True, random_state=42)
 
     for train, test in kf.split(metadata, metadata["Labels"].tolist()):
-        train_dataset, _ = train_test_split(metadata.iloc[train], train_size=train_size, random_state=42)
+        train_dataset, test_dataset = train_test_split(metadata.iloc[train], train_size=train_size, random_state=42)
         metadata_train.append(train_dataset)
-        metadata_test.append(metadata.iloc[test].copy().reset_index(drop=True))
+        metadata_test.append(test_dataset)
 
     return metadata_train, metadata_test
