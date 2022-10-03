@@ -551,14 +551,14 @@ def run_train(
         ds_train,
         batch_size=wandb_kwargs["config"]["batch_size"],
         shuffle=True,
-        num_workers=4,
+        num_workers=2,
         drop_last=True,
     )
     test_dataloader = torch.utils.data.DataLoader(
         ds_test,
         batch_size=wandb_kwargs["config"]["batch_size"],
         shuffle=True,
-        num_workers=4,
+        num_workers=2,
         drop_last=True,
     )
 
