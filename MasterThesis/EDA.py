@@ -11,7 +11,7 @@ import numpy as np
 import MasterThesis.preprocessing as DP
 from shapely.geometry import Polygon
 import seaborn as sns
-from osgeo import osr, gdal, ogr
+from osgeo import gdal
 import earthpy as et
 import earthpy.spatial as es
 import earthpy.plot as ep
