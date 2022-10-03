@@ -127,9 +127,7 @@ class CustomDaset(torch.utils.data.Dataset):
         return image, label
 
 
-def visualize_augmented_images(
-    dataset: torch.utils.data.Dataset, n: int = 10, classes_name: List[str] = None
-) -> None:
+def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10, classes_name: List[str] = None) -> None:
 
     """
     Plots augmented images used to train a segmentation model
@@ -142,10 +140,7 @@ def visualize_augmented_images(
         classes_name: name of each class
     """
 
-    cmap = {
-        i: [np.random.random(), np.random.random(), np.random.random(), 1]
-        for i in range(len(classes_name))
-    }
+    cmap = {i: [np.random.random(), np.random.random(), np.random.random(), 1] for i in range(len(classes_name))}
     labels_map = {i: name for i, name in enumerate(classes_name)}
     patches = [mpatches.Patch(color=cmap[i], label=labels_map[i]) for i in cmap]
 
@@ -237,9 +232,7 @@ def train_one_epoch(
 
     schedule.step()
     running_loss = np.round(running_loss / epoch, 4)
-    scores, logs = metrics.model_evaluation(
-        conf_mt, class_name=class_name, dataset_label="Train"
-    )
+    scores, logs = metrics.model_evaluation(conf_mt, class_name=class_name, dataset_label="Train")
     logs.update({"Train loss": running_loss})
 
     return scores, logs
@@ -288,9 +281,7 @@ def test_one_epoch(
             # Confusion matrix
             labels = labels.cpu().detach().numpy()
             output = outputs.argmax(1).cpu().detach().numpy()
-            output_proba = (
-                torch.nn.functional.softmax(outputs, dim=1).cpu().detach().numpy()
-            )
+            output_proba = torch.nn.functional.softmax(outputs, dim=1).cpu().detach().numpy()
 
             ###I have to apply soft max
             conf_mt += metrics.pixel_confusion_matrix(labels, output, class_num=3)
@@ -301,16 +292,12 @@ def test_one_epoch(
     running_loss = np.round(running_loss / epoch, 4)
 
     if last_epoch:
-        scores, logs = metrics.model_evaluation(
-            conf_mt, class_name=class_name, dataset_label="Test"
-        )
+        scores, logs = metrics.model_evaluation(conf_mt, class_name=class_name, dataset_label="Test")
         logs.update({"Test loss": running_loss})
         return scores, logs, metrics_by_threshold
 
     else:
-        scores, logs = metrics.model_evaluation(
-            conf_mt, class_name=class_name, dataset_label="Test"
-        )
+        scores, logs = metrics.model_evaluation(conf_mt, class_name=class_name, dataset_label="Test")
         logs.update({"Test loss": running_loss})
         return scores, logs, None
 
@@ -343,20 +330,13 @@ def generate_metadata_train_test_cv(
 
     X = np.arange(10)
     for train, test in kf.split(metadata):
-        metadata_train.append(
-            metadata.iloc[train]
-            .sample(n_images_train, random_state=42)
-            .copy()
-            .reset_index(drop=True)
-        )
+        metadata_train.append(metadata.iloc[train].sample(n_images_train, random_state=42).copy().reset_index(drop=True))
         metadata_test.append(metadata.iloc[test].copy().reset_index(drop=True))
 
     return metadata_train, metadata_test
 
 
-def generate_metadata_train_test(
-    train_size: float, test_size: float, metadata: pd.DataFrame
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def generate_metadata_train_test(train_size: float, test_size: float, metadata: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
     """
     Generate a train/test set using via holdout set
@@ -443,15 +423,9 @@ def train_model(
     """
 
     # Definte paths to save and load model
-    checkpoint_path = (
-        f"{metadata_kwargs['path_to_save_model']}/checkpoint_{wandb_kwargs['name']}.pt"
-    )
-    model_path = (
-        f"{metadata_kwargs['path_to_save_model']}/model_{wandb_kwargs['name']}.pth"
-    )
-    checkpoint_load_path = (
-        f"{metadata_kwargs['path_to_load_model']}/checkpoint_{wandb_kwargs['name']}.pt"
-    )
+    checkpoint_path = f"{metadata_kwargs['path_to_save_model']}/checkpoint_{wandb_kwargs['name']}.pt"
+    model_path = f"{metadata_kwargs['path_to_save_model']}/model_{wandb_kwargs['name']}.pth"
+    checkpoint_load_path = f"{metadata_kwargs['path_to_load_model']}/checkpoint_{wandb_kwargs['name']}.pt"
 
     # Create folder to save model
     if metadata_kwargs["path_to_save_model"]:
@@ -519,9 +493,7 @@ def train_model(
             wandb.log(logs_test)
             print("------------------------------------------------------------- \n")
 
-            if wandb_kwargs["config"]["fine_tune"] and (
-                wandb_kwargs["config"]["ft_epoch"] == epoch
-            ):
+            if wandb_kwargs["config"]["fine_tune"] and (wandb_kwargs["config"]["ft_epoch"] == epoch):
 
                 for parameters in model.backbone.parameters():
                     parameters.requires_grad = True
@@ -560,40 +532,14 @@ def train_model(
         metrics_table = wandb.Table(dataframe=metrics_by_threshold.get_table())
         wandb.log({"Table_Metrics": metrics_table})
 
-        wandb.log(
-            {
-                "Per Class Accuracy": metrics.plot_metrics_from_logs(
-                    logs_test, metric="Acc_by_Class"
-                )
-            }
-        )
-        wandb.log(
-            {"Recall": metrics.plot_metrics_from_logs(logs_test, metric="Recall")}
-        )
-        wandb.log(
-            {"F1 Score": metrics.plot_metrics_from_logs(logs_test, metric="F1_score")}
-        )
-        wandb.log(
-            {"Precision": metrics.plot_metrics_from_logs(logs_test, metric="Precision")}
-        )
+        wandb.log({"Per Class Accuracy": metrics.plot_metrics_from_logs(logs_test, metric="Acc_by_Class")})
+        wandb.log({"Recall": metrics.plot_metrics_from_logs(logs_test, metric="Recall")})
+        wandb.log({"F1 Score": metrics.plot_metrics_from_logs(logs_test, metric="F1_score")})
+        wandb.log({"Precision": metrics.plot_metrics_from_logs(logs_test, metric="Precision")})
         wandb.log({"Precision Recall Curve": metrics_by_threshold.plot_PR_curve()})
-        wandb.log(
-            {
-                "Precision by Threshold": metrics_by_threshold.get_bar_plot(
-                    metric="precision"
-                )
-            }
-        )
-        wandb.log(
-            {"Recall by Thresholds": metrics_by_threshold.get_bar_plot(metric="recall")}
-        )
-        wandb.log(
-            {
-                "F1_Score by Threshold": metrics_by_threshold.get_bar_plot(
-                    metric="f1_score"
-                )
-            }
-        )
+        wandb.log({"Precision by Threshold": metrics_by_threshold.get_bar_plot(metric="precision")})
+        wandb.log({"Recall by Thresholds": metrics_by_threshold.get_bar_plot(metric="recall")})
+        wandb.log({"F1_Score by Threshold": metrics_by_threshold.get_bar_plot(metric="f1_score")})
 
 
 ##Run a experiment
@@ -673,12 +619,10 @@ def run_train(
         ds_train,
         batch_size=wandb_kwargs["config"]["batch_size"],
         shuffle=True,
-        num_workers=4,
+        num_workers=2,
         drop_last=True,
     )
-    test_dataloader = torch.utils.data.DataLoader(
-        ds_test, batch_size=32, shuffle=True, num_workers=4, drop_last=True
-    )
+    test_dataloader = torch.utils.data.DataLoader(ds_test, batch_size=32, shuffle=True, num_workers=2, drop_last=True)
 
     # Instance Deep Lab model
     deeplab_model = DeepLab(
@@ -693,12 +637,8 @@ def run_train(
     deeplab_model.to(metadata_kwargs["device"])
 
     if wandb_kwargs["config"]["pretrained"]:
-        deeplab_model.backbone.load_state_dict(
-            torch.load(metadata_kwargs["path_to_load_backbone"]).backbone.state_dict()
-        )
-        deeplab_model.encoder.load_state_dict(
-            torch.load(metadata_kwargs["path_to_load_backbone"]).encoder.state_dict()
-        )
+        deeplab_model.backbone.load_state_dict(torch.load(metadata_kwargs["path_to_load_backbone"]).backbone.state_dict())
+        deeplab_model.encoder.load_state_dict(torch.load(metadata_kwargs["path_to_load_backbone"]).encoder.state_dict())
 
         for parameters in deeplab_model.backbone.parameters():
             parameters.requires_grad = False
