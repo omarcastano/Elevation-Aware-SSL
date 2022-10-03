@@ -51,9 +51,16 @@ class SimCLR(nn.Module):
             nn.Linear(in_features=proj_hidden_dim, out_features=proj_output_dim, bias=False),
         )
 
+        self._init_weight()
+
     def forward(self, x):
 
         x = self.backbone(x)
         x = self.projector(x)
 
         return x
+
+    def _init_weight(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                torch.nn.init.kaiming_normal_(m.weight)

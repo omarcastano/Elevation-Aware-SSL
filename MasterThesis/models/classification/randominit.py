@@ -44,12 +44,19 @@ class LinearClassifier(nn.Module):
             nn.Linear(in_features=self.backbone.inplanes, out_features=num_classes),
         )
 
+        self._init_weight()
+
     def forward(self, x):
 
         x = self.backbone(x)
         x = self.fc(x)
 
         return x
+
+    def _init_weight(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                torch.nn.init.kaiming_normal_(m.weight)
 
 
 class NoneLinearClassifier(nn.Module):
@@ -92,9 +99,16 @@ class NoneLinearClassifier(nn.Module):
             nn.Linear(in_features=n_hidden, out_features=num_classes),
         )
 
+        self._init_weight()
+
     def forward(self, x):
 
         x = self.backbone(x)
         x = self.fc(x)
 
         return x
+
+    def _init_weight(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                torch.nn.init.kaiming_normal_(m.weight)
