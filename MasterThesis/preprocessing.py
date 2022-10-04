@@ -165,7 +165,7 @@ def from_array_to_geotiff(path_to_save, array, path_to_chip_metadata, crs=3116):
         array: ndarray
             Image with dimension (C, H, W)
         path_to_chip_metadata: string
-            path to the chip metadata file which muste
+            path to the chip metadata file which must
             be in pickle format.
         crs: integer (default=3116)
             EPSG projection for the output GeoTiff
@@ -185,11 +185,11 @@ def from_array_to_geotiff(path_to_save, array, path_to_chip_metadata, crs=3116):
     OutSR.ImportFromEPSG(crs)  # Colombia Bogota zone
 
     Point = ogr.Geometry(ogr.wkbPoint)
-    Point.AddPoint(nw[1], nw[0])  # use your coordinates here
+    Point.AddPoint(nw[0], nw[1])  # use your coordinates here # In GDAL<=3.0.0 the order is nw[1], nw[0]
     Point.AssignSpatialReference(InSR)  # tell the point what coordinates it's in
     Point.TransformTo(OutSR)  # project it to the out spatial reference
 
-    DataSet.SetGeoTransform((Point.GetX(), 10, 0, Point.GetY(), 0, -10))
+    DataSet.SetGeoTransform((Point.GetY(), 10, 0, Point.GetX(), 0, -10))
 
     srs = osr.SpatialReference()
     srs.ImportFromEPSG(crs)
@@ -203,7 +203,8 @@ def shapefiel_to_geotiff(path_input_shp, path_output_raster, pixel_size, attribu
 
     """
     This function allow you to convert a shapefile into a Geotiff. In order to use this function
-    shapefile projection must be in Cartesian system in meters.
+    shapefile projection must be in Cartesian system in meters. In order for this module to work properly
+    you muy ensure that GDAL>=3.0.0
 
     Arguments:
         path_input_shp: string.
@@ -267,8 +268,11 @@ def crop_geotiff_chip(
 ):
 
     """
+
+
     Function center crops a geotiff image and then save the cropped geotiff using
-    coordinates stored in chip metadata.
+    coordinates stored in chip metadata. In order for this module to work properly
+    you muy ensure that GDAL>=3.0.0
 
     Arguments:
         path_to_chip_metadata: string
@@ -292,7 +296,7 @@ def crop_geotiff_chip(
     OutSR.ImportFromEPSG(crs)  # Colombia Bogota zone
 
     Point = ogr.Geometry(ogr.wkbPoint)
-    Point.AddPoint(nw[1], nw[0])  # use your coordinates here
+    Point.AddPoint(nw[0], nw[1])  # use your coordinates here # In GDAL<=3.0.0 the order is nw[1], nw[0]
     Point.AssignSpatialReference(InSR)  # tell the point what coordinates it's in
     Point.TransformTo(OutSR)  # project it to the out spatial reference
 
@@ -314,8 +318,8 @@ def crop_geotiff_chip(
     outdata = driver.Create(path_to_save_cropped_geotiff, new_shape[1], new_shape[0], 1, gdal.GDT_Int16)
 
     geotf = list(ds.GetGeoTransform())
-    geotf[0] = Point.GetX()
-    geotf[3] = Point.GetY()
+    geotf[0] = Point.GetY()
+    geotf[3] = Point.GetX()
 
     outdata.SetGeoTransform(tuple(geotf))  ##sets same geotransform as input
     outdata.SetProjection(ds.GetProjection())  ##sets same projection as input
