@@ -42,7 +42,7 @@ def data_augmentation(img):
     augmentation = transforms.Compose(
         [
             transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomResizedCrop(size=img.shape[1], scale=(0.95, 1.0)),
+            transforms.RandomResizedCrop(size=img.shape[1], scale=(0.7, 1.0)),
             transforms.RandomApply([transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1)], p=0.8),
             transforms.RandomGrayscale(p=0.2),
             # transforms.GaussianBlur(kernel_size=5),
@@ -450,14 +450,14 @@ def run_train(
         ds_train,
         batch_size=wandb_kwargs["config"]["batch_size"],
         shuffle=True,
-        num_workers=4,
+        num_workers=2,
         drop_last=True,
     )
     test_dataloader = torch.utils.data.DataLoader(
         ds_test,
         batch_size=wandb_kwargs["config"]["batch_size"],
         shuffle=True,
-        num_workers=4,
+        num_workers=2,
         drop_last=True,
     )
 
