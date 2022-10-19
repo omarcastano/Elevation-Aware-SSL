@@ -14,7 +14,7 @@ from torch.nn import Module
 import torch
 from torch import optim
 import wandb
-from MasterThesis.MasterThesis.models.segmentation import glcnet
+from MasterThesis.models.segmentation import glcnet
 from MasterThesis.utils.segmentation import contrast_loss
 
 
@@ -196,9 +196,7 @@ class CustomDaset(torch.utils.data.Dataset):
     def __getitem__(self, index):
 
         # Load and transform input image
-        image = EDA.read_numpy_image(
-            self.path_to_images + self.metadata.Image.tolist()[index]
-        )
+        image = EDA.read_numpy_image(self.path_to_images + self.metadata.Image.tolist()[index])
 
         if len(image.shape) == 4:
             image = EDA.less_cloudy_image(image)
@@ -216,16 +214,12 @@ class CustomDaset(torch.utils.data.Dataset):
         )
 
         # Data Augmentation
-        image1, label1, image2, label2 = data_augmentation(
-            image, label, input_size=[w, h]
-        )
+        image1, label1, image2, label2 = data_augmentation(image, label, input_size=[w, h])
 
         label1 = np.squeeze(label1.astype(np.float32))
         label2 = np.squeeze(label2.astype(np.float32))
 
-        rois = get_index(
-            label1, label2, (self.patch_size, self.patch_size), self.patch_num
-        )
+        rois = get_index(label1, label2, (self.patch_size, self.patch_size), self.patch_num)
 
         rois = rois.astype(np.float32)
 
@@ -427,15 +421,9 @@ def train_model(
     """
 
     # Definte paths to save and load model
-    checkpoint_path = (
-        f"{metadata_kwargs['path_to_save_model']}/checkpoint_{wandb_kwargs['name']}.pt"
-    )
-    model_path = (
-        f"{metadata_kwargs['path_to_save_model']}/model_{wandb_kwargs['name']}.pth"
-    )
-    checkpoint_load_path = (
-        f"{metadata_kwargs['path_to_load_model']}/checkpoint_{wandb_kwargs['name']}.pt"
-    )
+    checkpoint_path = f"{metadata_kwargs['path_to_save_model']}/checkpoint_{wandb_kwargs['name']}.pt"
+    model_path = f"{metadata_kwargs['path_to_save_model']}/model_{wandb_kwargs['name']}.pth"
+    checkpoint_load_path = f"{metadata_kwargs['path_to_load_model']}/checkpoint_{wandb_kwargs['name']}.pt"
 
     # Create folder to save model
     if metadata_kwargs["path_to_save_model"]:
@@ -615,8 +603,7 @@ def run_train(
             use_gpu=(metadata_kwargs["device"].type == "cuda"),
         ),
         contrast_loss.NTXentLoss(
-            bs=wandb_kwargs["config"]["batch_size"]
-            * wandb_kwargs["config"]["patch_num"],
+            bs=wandb_kwargs["config"]["batch_size"] * wandb_kwargs["config"]["patch_num"],
             gpu=metadata_kwargs["device"],
             tau=wandb_kwargs["config"]["temperature"],
             cos_sim=True,
@@ -632,9 +619,7 @@ def run_train(
     )
 
     # learning scheduler
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=wandb_kwargs["config"]["epochs"], eta_min=4e-08
-    )
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=wandb_kwargs["config"]["epochs"], eta_min=4e-08)
 
     train_model(
         train_dataloader,

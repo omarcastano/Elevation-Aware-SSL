@@ -1,13 +1,9 @@
 # import libraries
-import cv2
 import os
 import torch
 import wandb
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-import plotly.express as px
-import albumentations as album
 from MasterThesis import EDA
 from tqdm import tqdm
 from torch.nn import Module
@@ -261,40 +257,38 @@ def train_model(
     ---------
         metadata_kwargs: metadata required to train the model. Example:
             metadata_kwargs = {
-                "path_to_images": path_to_images,
-                "path_to_save_model": None,  # Path to save the model that is being trained (do not include the extension .pt or .pth)
-                "path_to_load_model": None,  # Path to load a model from a checkpoint (useful to handle notebook disconection)
-                "metadata": metadata,
-                "metadata_train": metadata_train[0],
-                "metadata_test": metadata_test[0],
-                "device": device,
+                "path_to_images": # path where images are stored,
+                "path_to_save_model": # Path to save the model that is being trained (do not include the extension .pt or .pth)
+                "path_to_load_model": # Path to load a model from a checkpoint (useful to handle notebook disconnection)
+                "metadata": # pandas dataframe with the metadata to load images,
+                "metadata_train": # pandas dataframe with the metadata to load images
+                "metadata_test": # pandas dataframe with the metadata to load images
+                "device": # GPU or CPU,
             }
 
         wandb_kwargs: parameteres to initialize wandb runs. Example:
             wandb_kwargs = {
-                "project": "RandomInit",
+                "project": "Classification",
                 "entity": "omar_castano",
                 "config": hypm,
                 "id": None,
-                "name": "RandomInit",
-                "resume": False,
+                "name": "SSL-SimCLR",
+                "resume": True,
             }
 
-            Example of hyperparameteres expected:
+            Example of hyperparameter expected:
             hypm = {
-                "version": "version",
-                "pretrained": "SimCLR", # SSL methodology. If not None path_to_load_backbone must be provided
-                "amount_of_ft_data": train_size,
-                "bn_momentum": 0.9,
-                "input_shape": [100, 100],
-                "patch_size" : 40,
-                "patch_num" : 16,
-                "in_channels" : 3,
-                "temperature" : 0.5, # Temperature hyperparameter used in the NTXenLoss function
-                "weight_decay": 0.0005,
-                "learning_rate": 1e-3,
-                "batch_size": 16,
-                "epochs": 2,
+            "version": # version reference to show in wandb,
+            "pretrained": # SSL methodology. If not None path_to_load_backbone must be provided
+            "amount_ss_data": # amount of data used to pre-train
+            "input_shape": # shape of input images
+            "backbone": # backbone use
+            "in_channels": # number of input channels
+            "temperature": # Temperature hyperparameter used in the NTXenLoss function
+            "weight_decay": # optimizer hyperparameter
+            "learning_rate": # learning rate
+            "batch_size": # batch size
+            "epochs": # epochs to pre-train
             }
     """
 
@@ -380,40 +374,38 @@ def run_train(
     ---------
         metadata_kwargs: metadata required to train the model. Example:
             metadata_kwargs = {
-                "path_to_images": path_to_images,
-                "path_to_save_model": None,  # Path to save the model that is being trained (do not include the extension .pt or .pth)
-                "path_to_load_model": None,  # Path to load a model from a checkpoint (useful to handle notebook disconection)
-                "metadata": metadata,
-                "metadata_train": metadata_train[0],
-                "metadata_test": metadata_test[0],
-                "device": device,
+                "path_to_images": # path where images are stored,
+                "path_to_save_model": # Path to save the model that is being trained (do not include the extension .pt or .pth)
+                "path_to_load_model": # Path to load a model from a checkpoint (useful to handle notebook disconnection)
+                "metadata": # pandas dataframe with the metadata to load images,
+                "metadata_train": # pandas dataframe with the metadata to load images
+                "metadata_test": # pandas dataframe with the metadata to load images
+                "device": # GPU or CPU,
             }
 
         wandb_kwargs: parameteres to initialize wandb runs. Example:
             wandb_kwargs = {
-                "project": "RandomInit",
+                "project": "Classification",
                 "entity": "omar_castano",
                 "config": hypm,
                 "id": None,
-                "name": "RandomInit",
-                "resume": False,
+                "name": "SSL-SimCLR",
+                "resume": True,
             }
 
-            Example of hyperparameteres expected:
+            Example of hyperparameter expected:
             hypm = {
-                "version": "version",
-                "pretrained": "SimCLR", # SSL methodology. If not None path_to_load_backbone must be provided
-                "amount_of_ft_data": train_size,
-                "bn_momentum": 0.9,
-                "input_shape": [100, 100],
-                "patch_size" : 40,
-                "patch_num" : 16,
-                "in_channels" : 3,
-                "temperature" : 0.5, # Temperature hyperparameter used in the NTXenLoss function
-                "weight_decay": 0.0005,
-                "learning_rate": 1e-3,
-                "batch_size": 16,
-                "epochs": 2,
+            "version": # version reference to show in wandb,
+            "pretrained": # SSL methodology. If not None path_to_load_backbone must be provided
+            "amount_ss_data": # amount of data used to pre-train
+            "input_shape": # shape of input images
+            "backbone": # backbone use
+            "in_channels": # number of input channels
+            "temperature": # Temperature hyperparameter used in the NTXenLoss function
+            "weight_decay": # optimizer hyperparameter
+            "learning_rate": # learning rate
+            "batch_size": # batch size
+            "epochs": # epochs to pre-train
             }
     """
 
