@@ -25,6 +25,7 @@ AUGMENTATIONS = {
     "horizontal_flip_prob": 0.5,
     "vertical_flip_prob": 0.5,
     "resize_scale": (0.85, 1.0),
+    "resize_prob": 0.5,
     "brightness": 0.2,
     "contrast": 0.2,
     "saturation": 0.2,
@@ -56,7 +57,7 @@ def data_augmentation(img, label, augment: dict = None):
         [
             album.VerticalFlip(p=augment["vertical_flip_prob"]),
             album.HorizontalFlip(p=augment["horizontal_flip_prob"]),
-            album.RandomResizedCrop(height=img.shape[1], width=img.shape[2], scale=augment["resize_scale"], p=0.5),
+            album.RandomResizedCrop(height=img.shape[1], width=img.shape[2], scale=augment["resize_scale"], p=augment["resize_prob"]),
         ]
     )
 
