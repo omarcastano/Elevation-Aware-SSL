@@ -14,59 +14,99 @@ from typing import List, Union, Tuple
 import matplotlib.patches as mpatches
 from MasterThesis.utils.segmentation import randominit
 from MasterThesis.models.segmentation.v3p import DeepLab
+from torchvision import transforms
 import wandb
 from sklearn.model_selection import KFold
 from . import metrics
+from IPython.display import clear_output
 
 
-def data_augmentation(image, label, input_size):
+AUGMENTATIONS = {
+    "horizontal_flip_prob": 0.5,
+    "vertical_flip_prob": 0.5,
+    "resize_scale": (0.85, 1.0),
+    "brightness": 0.2,
+    "contrast": 0.2,
+    "saturation": 0.2,
+    "hue": 0.1,
+    "color_jitter_prob": 0.5,
+    "gray_scale_prob": 0.2,
+}
+
+# Data loader
+def data_augmentation(img, label, augment: dict = None):
 
     """
-    Data augmentation such as vertical and horizontal flip,
+    Data augmentation for such as vertical and horizontal flip,
     random rotation and random sized crop.
 
-    Argumetns:
-        image: 3D numpy array
-            input image with shape (H,W,C)
+    Arguments:
+        img: 3D numpy array
+            input image with shape (C,H,W)
         label: 1D numpy array
             labels with shape (H,W)
-        input_size: list [H,W].
-            python list with the width and heigth
-            of the output images and labels.
-            example: input_size=[100,100]
+        transforms: dictionary
+            kwargs to transform images
     """
 
-    aug = album.Compose(
-        transforms=[
-            album.VerticalFlip(p=0.5),
-            album.HorizontalFlip(p=0.5),
-            album.RandomRotate90(p=0.5),
-            album.RandomSizedCrop(
-                min_max_height=(80, 85),
-                height=input_size[0],
-                width=input_size[1],
-                p=1.0,
-            ),
-            album.HueSaturationValue(
-                hue_shift_limit=0.4,
-                sat_shift_limit=(-0.04, 0.1),
-                val_shift_limit=0.08,
-                p=0.5,
-            ),
+    augment = augment or AUGMENTATIONS
+
+    # Defines spatial transformation
+    spatial_augment = album.Compose(
+        [
+            album.VerticalFlip(p=augment["vertical_flip_prob"]),
+            album.HorizontalFlip(p=augment["horizontal_flip_prob"]),
+            album.RandomResizedCrop(height=img.shape[1], width=img.shape[2], scale=augment["resize_scale"], p=0.5),
         ]
     )
 
-    augmented = aug(image=image, mask=label)
+    # Defines Color Jitter
+    color_jitter = transforms.ColorJitter(
+        brightness=augment["brightness"],
+        contrast=augment["contrast"],
+        saturation=augment["saturation"],
+        hue=augment["hue"],
+    )
 
-    image, label = augmented["image"], augmented["mask"]
+    # Defines color augmentation
+    color_augment = transforms.Compose(
+        [
+            transforms.RandomApply([color_jitter], p=augment["color_jitter_prob"]),
+            transforms.RandomGrayscale(p=augment["gray_scale_prob"]),
+        ]
+    )
 
-    return image, label
+    img = img.transpose(1, 2, 0)
+    augmented = spatial_augment(image=img, mask=label)
+    img, label = augmented["image"].transpose(2, 0, 1), augmented["mask"]
+
+    img = torch.from_numpy(img.astype(np.float32))
+    img = color_augment(img)
+
+    return img, label
 
 
-class CustomDaset(torch.utils.data.Dataset):
+class CustomDataset(torch.utils.data.Dataset):
 
     """
-    This class creates a custom pytorch dataset
+    This class creates a custom dataset for implementing
+    SimCLR self-supervised learning methodology
+
+    Arguments:
+        path_to_images: str
+            path to the folder where images are stored
+        path_to_labels: str
+            path to the folder where labels are stored
+        metadata: data frame
+            dataframe with the names of images and labels
+        return_original: bool
+            If True also return the original image,
+            so the output will be (original, augmented1, augmented2), else
+            the output will ve (augmented1, augmented2)
+        normalizing_factor: float, default=6000
+            factor to clip and normalize images
+        augment: dict, default=none
+            dictionary with the augmentations to perform
     """
 
     def __init__(
@@ -75,24 +115,17 @@ class CustomDaset(torch.utils.data.Dataset):
         path_to_labels: str,
         metadata: pd.DataFrame,
         return_original: bool = False,
+        normalizing_factor: int = 6000,
+        augment: dict = None,
     ):
 
-        """
-        Arguments:
-        ----------
-            path_to_images: path to the folder where images are stored
-            path_to_labels: path to the folder where labels are stored
-            metadata: dataframe with the names of images and labels
-            return_original: If True also return the original image,
-                so the output will be (original, augmented, label), else
-                the output will ve (augmented label)
-        """
-
         super().__init__()
+        self.augment = augment
         self.metadata = metadata
         self.path_to_images = path_to_images
         self.path_to_labels = path_to_labels
         self.return_original = return_original
+        self.normalizing_factor = normalizing_factor
 
     def __len__(self):
 
@@ -101,28 +134,30 @@ class CustomDaset(torch.utils.data.Dataset):
     def __getitem__(self, index):
 
         # Load and transform input image
-        image = EDA.read_numpy_image(self.path_to_images + self.metadata.Image[index])
+        image = EDA.read_numpy_image(self.path_to_images + self.metadata.Image.tolist()[index])
+
+        # Load labels
+        label = EDA.read_geotiff_image(self.path_to_labels + self.metadata.Mask.tolist()[index])
+        label[label == 1] = 0
+        label[label == 2] = 1
 
         if len(image.shape) == 4:
             image = EDA.less_cloudy_image(image)
 
-        image = np.clip(image[:3], 0, 6000) / 6000
-        original_image = image.copy()
-        image = image.transpose(1, 2, 0).astype(np.float32)
+        image = np.clip(image[:3], 0, self.normalizing_factor) / self.normalizing_factor
 
-        # Load label
-        label = EDA.read_geotiff_image(self.path_to_labels + self.metadata.Mask[index])
+        image = image.astype(np.float32)
+        original_image = image.copy()
 
         # Data Augmentation
-        image, label = data_augmentation(image, label, input_size=[100, 100])
+        if self.augment:
+            image, label = data_augmentation(image, label, self.augment)
 
         # Set data types compatible with pytorch
         label = torch.from_numpy(label).long()
-        image = image.astype(np.float32).transpose(2, 0, 1)
 
         if self.return_original:
-
-            return original_image, image, label
+            return original_image, image.numpy(), label.numpy()
 
         return image, label
 
@@ -151,6 +186,7 @@ def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10, c
 
         augmented = augmented.transpose(1, 2, 0)
         original = original.transpose(1, 2, 0)
+        label = label
 
         ax[2, i].imshow(label)
         ax[1, i].imshow(augmented + 0.1)
@@ -164,8 +200,9 @@ def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10, c
         ax[1, i].axis("off")
         ax[2, i].axis("off")
 
-        arrayShow = np.array([[cmap[i] for i in j] for j in label.numpy()])
+        arrayShow = np.array([[cmap[i] for i in j] for j in label])
         ax[2, i].imshow(arrayShow)
+
     plt.legend(
         handles=patches,
         bbox_to_anchor=(1.05, 1),
@@ -174,6 +211,8 @@ def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10, c
         markerscale=30,
         fontsize="large",
     )
+
+    plt.show()
 
 
 # define training one epoch
@@ -228,7 +267,7 @@ def train_one_epoch(
         # compute confusion matrix
         labels = labels.cpu().detach().numpy()
         outputs = outputs.argmax(1).cpu().detach().numpy()
-        conf_mt += metrics.pixel_confusion_matrix(labels, outputs, class_num=3)
+        conf_mt += metrics.pixel_confusion_matrix(labels, outputs, class_num=len(class_name))
 
     schedule.step()
     running_loss = np.round(running_loss / epoch, 4)
@@ -283,8 +322,8 @@ def test_one_epoch(
             output = outputs.argmax(1).cpu().detach().numpy()
             output_proba = torch.nn.functional.softmax(outputs, dim=1).cpu().detach().numpy()
 
-            ###I have to apply soft max
-            conf_mt += metrics.pixel_confusion_matrix(labels, output, class_num=3)
+            # I have to apply soft max
+            conf_mt += metrics.pixel_confusion_matrix(labels, output, class_num=len(class_name))
 
             if last_epoch:
                 metrics_by_threshold.metric_evaluation(labels, output_proba)
@@ -300,66 +339,6 @@ def test_one_epoch(
         scores, logs = metrics.model_evaluation(conf_mt, class_name=class_name, dataset_label="Test")
         logs.update({"Test loss": running_loss})
         return scores, logs, None
-
-
-def generate_metadata_train_test_cv(
-    metadata: pd.DataFrame, train_size: float, n_split: int = 5
-) -> Tuple[List[pd.DataFrame], List[pd.DataFrame]]:
-
-    """
-    Provides train/test indices to split data in train/test sets. Split
-    dataset into k consecutive foldsenerate train and test dataset via k-fold sets
-
-
-    Argguments:
-    ----------
-        metadata: dataframe with the path to images and labels
-        train_size: percentage of in each train set
-        n_split: numbers of folds. Must be at least 2
-    """
-
-    n_total_images = metadata.shape[0]
-    n_images_train = int(n_total_images * train_size)
-
-    print(f"Number fo total images : {n_total_images}")
-    print(f"Number of images to train: {n_images_train} ({train_size*100:.3f}%)")
-
-    metadata_train, metadata_test = [], []
-
-    kf = KFold(n_splits=n_split)
-
-    X = np.arange(10)
-    for train, test in kf.split(metadata):
-        metadata_train.append(metadata.iloc[train].sample(n_images_train, random_state=42).copy().reset_index(drop=True))
-        metadata_test.append(metadata.iloc[test].copy().reset_index(drop=True))
-
-    return metadata_train, metadata_test
-
-
-def generate_metadata_train_test(train_size: float, test_size: float, metadata: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
-
-    """
-    Generate a train/test set using via holdout set
-
-    Arguments:
-    ---------
-        train_size: percentage of data for training
-        test_size: percentage of data for test
-        metadata: dataframe with the path to images and labels
-    """
-
-    # total number of images
-    n_total_images = metadata.shape[0]
-    n_images_train = int(n_total_images * train_size)
-    n_images_test = int(n_total_images * test_size)
-
-    # Metadata to train and test
-    metadata_train = metadata.iloc[np.arange(0, n_images_train)].reset_index().copy()
-    metadata_test = metadata.iloc[-np.arange(1, n_images_test + 1)].reset_index().copy()
-
-    assert not np.isin(metadata_train.Image, metadata_test.Image).any()
-
-    return metadata_train, metadata_test
 
 
 # train model
@@ -438,9 +417,7 @@ def train_model(
         wandb.log(
             {
                 "Label Distribution": EDA.label_pixel_distributio(
-                    metadata_kwargs["path_to_labels"],
-                    metadata_kwargs["metadata"],
-                    metadata_kwargs["select_classes"],
+                    metadata_kwargs["path_to_labels"], metadata_kwargs["metadata"], metadata_kwargs["select_classes"]
                 )
             }
         )
@@ -501,6 +478,9 @@ def train_model(
                 for parameters in model.encoder.parameters():
                     parameters.requires_grad = True
 
+                for g in optimizer.param_groups:
+                    g["lr"] = wandb_kwargs["config"]["lr_ft"]
+
             # Save the model
             if metadata_kwargs["path_to_save_model"]:
                 torch.save(
@@ -540,6 +520,7 @@ def train_model(
         wandb.log({"Precision by Threshold": metrics_by_threshold.get_bar_plot(metric="precision")})
         wandb.log({"Recall by Thresholds": metrics_by_threshold.get_bar_plot(metric="recall")})
         wandb.log({"F1_Score by Threshold": metrics_by_threshold.get_bar_plot(metric="f1_score")})
+    clear_output(wait=True)
 
 
 ##Run a experiment
@@ -552,7 +533,6 @@ def run_train(
     """
     Run a experiment where a DeepLabv3+ model is trained using resnet50 as backbone. A pre-trained
     encoder can be loaded and finetune during the training.
-
 
     Arguments:
     ---------
@@ -603,16 +583,31 @@ def run_train(
         print("run_id", run_id)
 
     # Define dataset
-    ds_train = randominit.CustomDaset(
+    ds_train = CustomDataset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["path_to_labels"],
         metadata_kwargs["metadata_train"],
+        normalizing_factor=wandb_kwargs["config"]["normalizing_factor"],
+        augment=wandb_kwargs["config"]["augment"],
     )
-    ds_test = randominit.CustomDaset(
+    ds_test = CustomDataset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["path_to_labels"],
         metadata_kwargs["metadata_test"],
+        normalizing_factor=wandb_kwargs["config"]["normalizing_factor"],
+        augment=None,
     )
+
+    ds_train_sample = CustomDataset(
+        metadata_kwargs["path_to_images"],
+        metadata_kwargs["path_to_labels"],
+        metadata_kwargs["metadata"],
+        normalizing_factor=wandb_kwargs["config"]["normalizing_factor"],
+        return_original=True,
+        augment=wandb_kwargs["config"]["augment"],
+    )
+
+    visualize_augmented_images(ds_train_sample, classes_name=metadata_kwargs["select_classes"])
 
     # define dataloader
     train_dataloader = torch.utils.data.DataLoader(
@@ -622,14 +617,21 @@ def run_train(
         num_workers=2,
         drop_last=True,
     )
-    test_dataloader = torch.utils.data.DataLoader(ds_test, batch_size=32, shuffle=True, num_workers=2, drop_last=True)
+    test_dataloader = torch.utils.data.DataLoader(
+        ds_test,
+        batch_size=32,
+        shuffle=True,
+        num_workers=2,
+        drop_last=True,
+    )
 
     # Instance Deep Lab model
+    torch.manual_seed(42)
     deeplab_model = DeepLab(
         num_classes=wandb_kwargs["config"]["num_classes"],
         in_channels=wandb_kwargs["config"]["in_channels"],
         pretrained=False,
-        arch="resnet50",
+        arch=wandb_kwargs["config"]["backbone"],
         output_stride=16,
         bn_momentum=wandb_kwargs["config"]["bn_momentum"],
         freeze_bn=False,
@@ -637,8 +639,12 @@ def run_train(
     deeplab_model.to(metadata_kwargs["device"])
 
     if wandb_kwargs["config"]["pretrained"]:
-        deeplab_model.backbone.load_state_dict(torch.load(metadata_kwargs["path_to_load_backbone"]).backbone.state_dict())
-        deeplab_model.encoder.load_state_dict(torch.load(metadata_kwargs["path_to_load_backbone"]).encoder.state_dict())
+        deeplab_model.backbone.load_state_dict(
+            torch.load(metadata_kwargs["path_to_load_backbone"], map_location=torch.device("cpu")).backbone.state_dict()
+        )
+        deeplab_model.encoder.load_state_dict(
+            torch.load(metadata_kwargs["path_to_load_backbone"], map_location=torch.device("cpu")).encoder.state_dict()
+        )
 
         for parameters in deeplab_model.backbone.parameters():
             parameters.requires_grad = False
@@ -665,7 +671,7 @@ def run_train(
     # Learning schedule
     schedule = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
 
-    randominit.train_model(
+    train_model(
         train_dataloader,
         test_dataloader,
         deeplab_model,
@@ -676,3 +682,63 @@ def run_train(
         wandb_kwargs=wandb_kwargs,
         metadata_kwargs=metadata_kwargs,
     )
+
+
+def generate_metadata_train_test_cv(
+    metadata: pd.DataFrame, train_size: float, n_split: int = 5
+) -> Tuple[List[pd.DataFrame], List[pd.DataFrame]]:
+
+    """
+    Provides train/test indices to split data in train/test sets. Split
+    dataset into k consecutive foldsenerate train and test dataset via k-fold sets
+
+
+    Argguments:
+    ----------
+        metadata: dataframe with the path to images and labels
+        train_size: percentage of in each train set
+        n_split: numbers of folds. Must be at least 2
+    """
+
+    n_total_images = metadata.shape[0]
+    n_images_train = int(n_total_images * train_size)
+
+    print(f"Number fo total images : {n_total_images}")
+    print(f"Number of images to train: {n_images_train} ({train_size*100:.3f}%)")
+
+    metadata_train, metadata_test = [], []
+
+    kf = KFold(n_splits=n_split)
+
+    X = np.arange(10)
+    for train, test in kf.split(metadata):
+        metadata_train.append(metadata.iloc[train].sample(n_images_train, random_state=42).copy().reset_index(drop=True))
+        metadata_test.append(metadata.iloc[test].copy().reset_index(drop=True))
+
+    return metadata_train, metadata_test
+
+
+def generate_metadata_train_test(train_size: float, test_size: float, metadata: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+
+    """
+    Generate a train/test set using via holdout set
+
+    Arguments:
+    ---------
+        train_size: percentage of data for training
+        test_size: percentage of data for test
+        metadata: dataframe with the path to images and labels
+    """
+
+    # total number of images
+    n_total_images = metadata.shape[0]
+    n_images_train = int(n_total_images * train_size)
+    n_images_test = int(n_total_images * test_size)
+
+    # Metadata to train and test
+    metadata_train = metadata.iloc[np.arange(0, n_images_train)].reset_index().copy()
+    metadata_test = metadata.iloc[-np.arange(1, n_images_test + 1)].reset_index().copy()
+
+    assert not np.isin(metadata_train.Image, metadata_test.Image).any()
+
+    return metadata_train, metadata_test

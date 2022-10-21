@@ -261,10 +261,9 @@ def test_one_epoch(
             output = outputs.argmax(1).cpu().detach().numpy()
             output_proba = torch.nn.functional.softmax(outputs, dim=-1).cpu().detach().numpy()
 
-            ###I have to apply soft max
             y_true.append(labels)
             y_pred.append(output)
-            y_pred_proba.append(output_proba)
+            y_pred_proba.append(output_proba)  # I have to apply soft max
 
     y_true = np.hstack(y_true)
     y_pred = np.hstack(y_pred)
@@ -448,7 +447,6 @@ def train_model(
         # Save tables with metrics in wandB
         wandb.log({"Loss": wandb.Table(dataframe=loss)})
         metrics_table = wandb.Table(dataframe=metrics_by_threshold.get_table())
-        print(metrics_by_threshold.get_table())
         wandb.log({"Table_Metrics": metrics_table})
 
         wandb.log({"Per Class Accuracy": metrics.plot_metrics_from_logs(logs_test, metric="Acc_by_Class")})

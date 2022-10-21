@@ -109,11 +109,11 @@ class threshold_metric_evaluation:
 
                 y_pred = (y_pred_proba >= t).astype(int)
 
-                recall = recall_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=0)
+                recall = recall_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=1)
 
                 precision = precision_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=1)
 
-                f1 = f1_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=0)
+                f1 = f1_score((y_true == y) * 1, y_pred, pos_label=1, zero_division=1)
 
                 result.append(
                     {

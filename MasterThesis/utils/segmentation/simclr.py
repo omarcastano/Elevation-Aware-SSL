@@ -37,7 +37,7 @@ def data_augmentation(img, augment: dict = None):
 
     Arguments:
         img: 3D numpy array
-            input image with shape (H,W,C)
+            input image with shape (C,H,W)
         transforms: dictionary
             kwargs to transform images
     """
