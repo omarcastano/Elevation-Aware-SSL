@@ -447,7 +447,7 @@ def train_model(
                 metadata_kwargs["device"],
             )
 
-            if (epoch + 1 % 10 == 0) | (epoch + 1 == 1):
+            if ((epoch + 1) % 10 == 0) | (epoch + 1 == 1):
                 last_epoch = (epoch + 1) == wandb_kwargs["config"]["epochs"]
                 _, logs_test, metrics_by_threshold = test_one_epoch(
                     test_loader,
