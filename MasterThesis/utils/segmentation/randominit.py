@@ -320,12 +320,10 @@ def test_one_epoch(
             # Confusion matrix
             labels = labels.cpu().detach().numpy()
             output = outputs.argmax(1).cpu().detach().numpy()
-            output_proba = torch.nn.functional.softmax(outputs, dim=1).cpu().detach().numpy()
-
-            # I have to apply soft max
-            conf_mt += metrics.pixel_confusion_matrix(labels, output, class_num=len(class_name))
 
             if last_epoch:
+                output_proba = torch.nn.functional.softmax(outputs, dim=1).cpu().detach().numpy()  # I have to apply soft max
+                conf_mt += metrics.pixel_confusion_matrix(labels, output, class_num=len(class_name))
                 metrics_by_threshold.metric_evaluation(labels, output_proba)
 
     running_loss = np.round(running_loss / epoch, 4)
@@ -336,9 +334,8 @@ def test_one_epoch(
         return scores, logs, metrics_by_threshold
 
     else:
-        scores, logs = metrics.model_evaluation(conf_mt, class_name=class_name, dataset_label="Test")
-        logs.update({"Test loss": running_loss})
-        return scores, logs, None
+        logs = {"Test loss": running_loss}
+        return None, logs, None
 
 
 # train model
