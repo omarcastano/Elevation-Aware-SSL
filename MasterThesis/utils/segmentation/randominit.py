@@ -139,7 +139,6 @@ class CustomDataset(torch.utils.data.Dataset):
 
         # Load labels
         label = EDA.read_geotiff_image(self.path_to_labels + self.metadata.Mask.tolist()[index])
-        label[label == 1] = 0
         label[label == 2] = 1
 
         if len(image.shape) == 4:

@@ -56,9 +56,7 @@ def lineplot_metrics_from_wandb(
     for logs in summary_runs:
         if (logs["version"] in version) and (logs["amount_of_ft_data"] in train_size):
             for i, j in logs.items():
-                if (f"{metric}" in i) and (
-                    "weighted" not in i.lower() and isinstance(j, float)
-                ):
+                if (f"{metric}" in i) and ("weighted" not in i.lower() and isinstance(j, float)):
                     metric_name.append(i.replace("_" + f"{metric}", ""))
                     metric_score.append(j)
                     metric_version.append(logs["version"])
@@ -73,9 +71,7 @@ def lineplot_metrics_from_wandb(
         }
     )
 
-    df = df.groupby(["version", "class", "train_size"], as_index=False).agg(
-        mean=("metrics", "mean"), std=("metrics", "std")
-    )
+    df = df.groupby(["version", "class", "train_size"], as_index=False).agg(mean=("metrics", "mean"), std=("metrics", "std"))
     fig = px.line(
         data_frame=df,
         y="mean",
@@ -144,9 +140,7 @@ def barplot_metrics_from_wandb(
     for logs in summary_runs:
         if (logs["version"] in version) and (logs["amount_of_ft_data"] in train_size):
             for i, j in logs.items():
-                if (f"{metric}" in i) and (
-                    "weighted" not in i.lower() and isinstance(j, float)
-                ):
+                if (f"{metric}" in i) and ("weighted" not in i.lower() and isinstance(j, float)):
                     metric_name.append(i.replace("_" + f"{metric}", ""))
                     metric_score.append(j)
                     metric_version.append(logs["version"])
@@ -162,7 +156,9 @@ def barplot_metrics_from_wandb(
             }
         )
         .astype({"train_size": str})
+        .assign(train_size_num=lambda x: x["train_size"].astype(float))
         .assign(train_size=lambda x: x["train_size"] + "%")
+        .sort_values(by="train_size_num")
     )
 
     if len(version) > 1 and len(train_size) == 1:
@@ -173,9 +169,10 @@ def barplot_metrics_from_wandb(
         color = "version_train_size"
 
     df = (
-        df.groupby(["class", "version", "train_size"], as_index=False)
+        df.groupby(["class", "version", "train_size", "train_size_num"], as_index=False)
         .agg(mean=("metrics", "mean"), std=("metrics", "std"))
         .assign(version_train_size=lambda x: x.version + "-" + x.train_size)
+        .sort_values(by="train_size_num")
     )
 
     fig = px.bar(
@@ -238,16 +235,10 @@ def get_table(
         train_loss = 0
         test_loss = 0
 
-        ids = [
-            j["id"]
-            for j in summary_runs
-            if (j["version"] == vs) and (j["amount_of_ft_data"] == ts)
-        ]
+        ids = [j["id"] for j in summary_runs if (j["version"] == vs) and (j["amount_of_ft_data"] == ts)]
 
         for n, id in enumerate(ids, 1):
-            my_table = run.use_artifact(
-                f"{entity}/{project}/run-{id}-{table_name}:v0"
-            ).get(table_name)
+            my_table = run.use_artifact(f"{entity}/{project}/run-{id}-{table_name}:v0").get(table_name)
             my_table = pd.DataFrame(data=my_table.data, columns=my_table.columns)
 
             if table_name == "Loss":
@@ -258,13 +249,9 @@ def get_table(
                 recall += my_table.recall
                 f1_score += my_table.f1_score
 
-        print(
-            "-------------------------------------------------------------------------------------"
-        )
+        print("-------------------------------------------------------------------------------------")
         print(f"The number of runs found with train_size={ts} and version={vs} is {n}")
-        print(
-            "-------------------------------------------------------------------------------------"
-        )
+        print("-------------------------------------------------------------------------------------")
 
         if table_name == "Loss":
             my_table["train_loss"] = train_loss / n
@@ -339,9 +326,7 @@ def plot_loss_curves(table, color, line_dash):
         hover_data={"version": False, "train_size": False, "epoch": False},
     )
 
-    fig.update_layout(
-        yaxis_title="Score", xaxis_title="Epoch", font={"size": 14}, hovermode="x"
-    )
+    fig.update_layout(yaxis_title="Score", xaxis_title="Epoch", font={"size": 14}, hovermode="x")
 
     return fig
 
@@ -369,8 +354,6 @@ def plot_metrics_by_threshold(table, metric="recall", color=None, line_dash=None
         markers=True,
     )
 
-    fig.update_layout(
-        yaxis_title=f"{metric}", xaxis_title="Threshold", font={"size": 14}
-    )
+    fig.update_layout(yaxis_title=f"{metric}", xaxis_title="Threshold", font={"size": 14})
 
     return fig
