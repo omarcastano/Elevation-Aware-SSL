@@ -440,14 +440,14 @@ def run_train(
     # define dataloader
     train_dataloader = torch.utils.data.DataLoader(
         ds_train,
-        batch_size=wandb_kwargs["config"]["batch_size"],
+        batch_size=wandb_kwargs["config"]["train_batch_size"],
         shuffle=True,
         num_workers=2,
         drop_last=True,
     )
     test_dataloader = torch.utils.data.DataLoader(
         ds_test,
-        batch_size=wandb_kwargs["config"]["batch_size"],
+        batch_size=wandb_kwargs["config"]["test_batch_size"],
         shuffle=True,
         num_workers=2,
         drop_last=True,

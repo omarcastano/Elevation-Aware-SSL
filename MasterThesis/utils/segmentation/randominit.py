@@ -447,15 +447,16 @@ def train_model(
                 metadata_kwargs["device"],
             )
 
-            last_epoch = epoch + 1 == wandb_kwargs["config"]["epochs"]
-            _, logs_test, metrics_by_threshold = test_one_epoch(
-                test_loader,
-                model,
-                loss_fn,
-                metadata_kwargs["select_classes"],
-                metadata_kwargs["device"],
-                last_epoch,
-            )
+            if (epoch + 1 % 10 == 0) | (epoch + 1 == 1):
+                last_epoch = (epoch + 1) == wandb_kwargs["config"]["epochs"]
+                _, logs_test, metrics_by_threshold = test_one_epoch(
+                    test_loader,
+                    model,
+                    loss_fn,
+                    metadata_kwargs["select_classes"],
+                    metadata_kwargs["device"],
+                    last_epoch,
+                )
 
             print(f'\n    Train Loss: { logs_train["Train loss"] }')
             print(f'\n    Test Loss: { logs_test["Test loss"] }')
@@ -609,14 +610,15 @@ def run_train(
     # define dataloader
     train_dataloader = torch.utils.data.DataLoader(
         ds_train,
-        batch_size=wandb_kwargs["config"]["batch_size"],
+        batch_size=wandb_kwargs["config"]["train_batch_size"],
         shuffle=True,
         num_workers=2,
         drop_last=True,
     )
+
     test_dataloader = torch.utils.data.DataLoader(
         ds_test,
-        batch_size=32,
+        batch_size=wandb_kwargs["config"]["test_batch_size"],
         shuffle=True,
         num_workers=2,
         drop_last=True,
