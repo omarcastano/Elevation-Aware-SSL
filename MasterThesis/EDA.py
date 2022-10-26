@@ -490,7 +490,6 @@ def label_pixel_distributio(path_to_label: str, metadata: pd.DataFrame, select_c
 
     for label in tqdm(metadata.Mask):
         lbl = read_geotiff_image(path_to_label + label)
-        lbl[lbl == 1] = 0
         lbl[lbl == 2] = 1
         n_unique, counts = np.unique(lbl, return_counts=True)
         unique[n_unique] += counts
