@@ -207,7 +207,7 @@ def resnet18(num_classes: int = 1000, num_channels: int = 3):
             number of input image channels
     """
 
-    ResNet(BasicBlock, [2, 2, 2, 2], num_classes=num_classes, in_channels=num_classes)
+    return ResNet(BasicBlock, [2, 2, 2, 2], num_classes=num_classes, in_channels=num_channels)
 
 
 def resnet50(num_classes: int = 1000, num_channels: int = 3):
@@ -222,4 +222,4 @@ def resnet50(num_classes: int = 1000, num_channels: int = 3):
             number of input image channels
     """
 
-    ResNet(BottleNeck, [3, 4, 6, 3], num_classes=num_classes, in_channels=num_classes)
+    return ResNet(BottleNeck, [3, 4, 6, 3], num_classes=num_classes, in_channels=num_channels)
