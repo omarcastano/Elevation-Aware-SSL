@@ -2,10 +2,8 @@
 import torch
 import numpy as np
 import pandas as pd
-import plotly.express as px
 from MasterThesis import EDA
 from typing import List, Union, Tuple
-from MasterThesis.utils.classification import metrics
 from torchvision import transforms
 
 
