@@ -30,6 +30,8 @@ def read_geotiff_image(path):
     """
 
     image = gdal.Open(path).ReadAsArray()
+    image[image == 2] = 1
+
     return image
 
 
@@ -64,7 +66,7 @@ def load_image_and_labels(img_path, label_path):
 def image_label_sanity_check(metadata, path_to_images, path_to_labels):
 
     """
-    load all images and labels to verify they exist on the folder
+    load all images and labels to verify that they exist in the folder
 
     Arguments:
        metadata: dataframe with the path to label and images
@@ -329,27 +331,33 @@ def pixel_histogram_and_filtered_image(path_to_images, metadata, sample=5, scale
 
 # helper function for data visualization#
 def visualize_images_and_masks(
-    path_to_label,
-    path_to_images,
-    metadata,
-    temporal_dim=True,
-    n=5,
-    figsize=(10, 5),
+    path_to_label: str,
+    path_to_images: str,
+    metadata: pd.DataFrame,
+    class_names=List,
+    area: Tuple = None,
+    temporal_dim: bool = True,
+    n: int = 5,
+    figsize: Tuple = (10, 5),
     brightness=0.0,
 ):
 
     """
     Plots RGB images and labels. If images come with extra temporal
-    information, they must have the sahpe (T,C,W,H), otherwise
+    information, they must have the shape (T,C,W,H), otherwise
     they should have the shape (C,W,H).
 
     Argument:
         path_to_label: string
             path to labels
         path_to_images: string
-            path to imags
+            path to images
         metadata: data frame
             dataframe with the name of each image and label
+        class_names: List
+            name of the classes
+        area: Tuple, default=None
+            columns to get the area cover by the classes
         temporal_dim: bool. default True
             wether images have temporal dimension or not.
             if images have temporal dimension, the must have the
@@ -358,15 +366,15 @@ def visualize_images_and_masks(
             number of images to plot
         figsize: tuple
             matplotlib figure size
+        brightness: float, default=0
+            factor to add brightness to plotted images
     """
+
     t = 1  ## alpha value
-    cmap = {0: [1.0, 0.5, 0.5, t], 1: [0.5, 0.5, 0.1, t], 2: [0.2, 0.8, 0.2, t]}
-    labels_pam = {
-        0: "non_agricultural_area",
-        1: "legal_exclusions",
-        2: "agricultural_frontier",
-    }
-    patches = [mpatches.Patch(color=cmap[i], label=labels_pam[i]) for i in cmap]
+    cmap = {i: [np.random.random(), np.random.random(), np.random.random(), 1] for i in range(len(class_names))}
+    labels_map = {i: name for i, name in enumerate(class_names)}
+
+    patches = [mpatches.Patch(color=cmap[i], label=labels_map[i]) for i in cmap]
 
     fig, ax = plt.subplots(2, n, figsize=figsize)
 
@@ -406,8 +414,17 @@ def visualize_images_and_masks(
                 markerscale=30,
                 fontsize="xx-large",
             )
+
             ax[0, i].axis("off")
             ax[1, i].axis("off")
+
+            title = metadata[area].iloc[i].to_dict()
+
+            s = ""
+            for i_, j_ in title.items():
+                s += i_ + ":" + str(j_) + " \n"
+
+            ax[1, i].set_title(s)
 
     return fig
 
