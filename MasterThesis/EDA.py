@@ -30,7 +30,6 @@ def read_geotiff_image(path):
     """
 
     image = gdal.Open(path).ReadAsArray()
-    image[image == 2] = 1
 
     return image
 
@@ -38,15 +37,20 @@ def read_geotiff_image(path):
 # Function that reads numpy image
 def read_numpy_image(path):
     """
-    Read image stored in .npz format
+    Read image stored in .npz or .npy format
 
     Arguments:
         path: string
             path to image
     """
 
-    image = np.load(path)
-    return image["arr_0"]
+    if path[-3:] == "npz":
+
+        image = np.load(path)
+        return image["arr_0"]
+
+    elif path[-3:] == "npy":
+        return np.load(path)
 
 
 def load_image_and_labels(img_path, label_path):
@@ -244,8 +248,8 @@ def simple_cloud_mask_filter(image, scale_factor, clip, threshold=0.5):
     """
     This function filter images based on a given threshold
 
-    Argumetns:
-        image (T,C,W,H):numpy array
+    Arguments:
+        image (C,W,H):numpy array
             Time series images
         scale_factor: flaot
             Factor to sacles images
@@ -357,7 +361,7 @@ def visualize_images_and_masks(
         class_names: List
             name of the classes
         area: Tuple, default=None
-            columns to get the area cover by the classes
+            columns to get the area covered by the classes
         temporal_dim: bool. default True
             wether images have temporal dimension or not.
             if images have temporal dimension, the must have the
@@ -404,6 +408,8 @@ def visualize_images_and_masks(
             ax[0, i].imshow(np.clip(img[0:3].transpose(1, 2, 0), 0, 6000) / 6000 + brightness)
             ax[1, i].imshow(label)
 
+            label[label == 2] = 1
+
             arrayShow = np.array([[cmap[i] for i in j] for j in label])
             ax[1, i].imshow(arrayShow)
             plt.legend(
@@ -418,13 +424,14 @@ def visualize_images_and_masks(
             ax[0, i].axis("off")
             ax[1, i].axis("off")
 
-            title = metadata[area].iloc[i].to_dict()
+            if area:
+                title = metadata[area].iloc[i].to_dict()
 
-            s = ""
-            for i_, j_ in title.items():
-                s += i_ + ":" + str(j_) + " \n"
+                s = ""
+                for i_, j_ in title.items():
+                    s += i_ + ":" + str(j_) + " \n"
 
-            ax[1, i].set_title(s)
+                ax[1, i].set_title(s)
 
     return fig
 

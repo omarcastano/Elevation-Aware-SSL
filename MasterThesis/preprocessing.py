@@ -87,11 +87,12 @@ def polygons_intersection(
 ):
 
     """
-    Functon that conputes the intesection between polygons stored in shapefiles.
+    Function that computes the intersection between polygons stored in shapefile.
+
     shapefile1: string or geo pandas dataframe
         either the path to the folder where a shapefile is stored or
         a geopandas dataframe with the polygons. Here you must provide
-        the "Fronteer".
+        the "Frontier".
     shapefile2: string or geo pandas dataframe
         either the path to the folder where a shapefile is stored or
         a geopandas dataframe with the polygons. Here you must provide the
@@ -105,7 +106,7 @@ def polygons_intersection(
         intersection will be stored
     crs: string, optional (default=None)
         Projection for the output shapefile. If None the output projection
-        will be the same of input shapefiles.
+        will be the same of input shapefile.
     """
 
     if type(shapefile1) == str:
@@ -119,9 +120,12 @@ def polygons_intersection(
     chip_references = []
     geometry = []
     labels = []
+    municipality = []
+
     for label in unique_labels:
         chip_references.append(chip_name)
         sipra_mask = shapefile1.loc[shapefile1["elemento"] == label, :]
+        # municipality.append(sipra_mask["municipio"])
 
         inter = shapefile2.sample(sipra_mask.shape[0], replace=True).intersection(sipra_mask, align=False)
         inter = inter[~inter.is_empty]
@@ -331,7 +335,7 @@ def crop_geotiff_chip(
 def remove_corruped_labels(path_to_label: str, metadata: pd.DataFrame):
 
     """
-    Remove corrupted label, that is, labels which values
+    Remove corrupted label, that is, labels which values are
     out of the set {0,1,2}
 
     Argumetns: str
@@ -352,4 +356,4 @@ def remove_corruped_labels(path_to_label: str, metadata: pd.DataFrame):
         elif (lbl < 0).any():
             drop_index.append(index)
 
-    return metadata.drop(drop_index).reset_index()
+    return metadata.drop(drop_index).reset_index(drop=True)

@@ -453,7 +453,7 @@ def run_train(
         ds_train,
         batch_size=wandb_kwargs["config"]["train_batch_size"],
         shuffle=True,
-        num_workers=2,
+        num_workers=4,
         drop_last=True,
     )
 
@@ -461,7 +461,7 @@ def run_train(
         ds_test,
         batch_size=wandb_kwargs["config"]["test_batch_size"],
         shuffle=True,
-        num_workers=2,
+        num_workers=4,
         drop_last=True,
     )
 

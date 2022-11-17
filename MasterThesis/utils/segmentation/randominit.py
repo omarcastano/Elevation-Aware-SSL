@@ -19,6 +19,7 @@ import wandb
 from sklearn.model_selection import KFold
 from . import metrics
 from IPython.display import clear_output
+from MasterThesis.segmentation.sl import Unet
 
 
 AUGMENTATIONS = {
@@ -449,7 +450,7 @@ def train_model(
                 metadata_kwargs["device"],
             )
 
-            if ((epoch + 1) % 10 == 0) | (epoch + 1 == 1):
+            if ((epoch + 1) % 5 == 0) | (epoch + 1 == 1):
                 last_epoch = (epoch + 1) == wandb_kwargs["config"]["epochs"]
                 _, logs_test, metrics_by_threshold = test_one_epoch(
                     test_loader,
@@ -628,15 +629,17 @@ def run_train(
 
     # Instance Deep Lab model
     torch.manual_seed(42)
-    deeplab_model = DeepLab(
-        num_classes=wandb_kwargs["config"]["num_classes"],
-        in_channels=wandb_kwargs["config"]["in_channels"],
-        pretrained=False,
-        arch=wandb_kwargs["config"]["backbone"],
-        output_stride=16,
-        bn_momentum=wandb_kwargs["config"]["bn_momentum"],
-        freeze_bn=False,
-    )
+    # deeplab_model = DeepLab(
+    #    num_classes=wandb_kwargs["config"]["num_classes"],
+    #    in_channels=wandb_kwargs["config"]["in_channels"],
+    #    pretrained=False,
+    #    arch=wandb_kwargs["config"]["backbone"],
+    #    output_stride=16,
+    #    bn_momentum=wandb_kwargs["config"]["bn_momentum"],
+    #    freeze_bn=False,
+    # )
+
+    deeplab_model = Unet(input_size=100, output_size=100, number_classes=2)
     deeplab_model.to(metadata_kwargs["device"])
 
     if wandb_kwargs["config"]["pretrained"]:
