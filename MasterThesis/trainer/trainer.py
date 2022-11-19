@@ -6,6 +6,8 @@ from typing import List, Callable
 from tqdm.notebook import tqdm
 from MasterThesis.ssl.elevation.model import ElevationSSL
 
+import wandb
+
 MODELS = {"ElevationSSL": ElevationSSL}
 
 
@@ -21,8 +23,6 @@ class Trainer:
         dataloader to test SimCLR
     model : Module
         SimCLR model
-    wandb_connector : wandb
-        wandb connector
     wandb_kwargs : dict
         kwargs used to load metrics to wandb
     hypm_kwargs: dict
@@ -35,14 +35,12 @@ class Trainer:
         self,
         custom_dataloader: nn.Module,
         visualizer: Callable,
-        wandb_connector,
         wandb_kwargs: dict,
         hypm_kwargs: dict,
         metadata_kwargs: dict,
     ) -> None:
 
         self.custom_dataloader = custom_dataloader
-        self.wandb_connector = wandb_connector
         self.wandb_kwargs = wandb_kwargs
         self.hypm_kwargs = hypm_kwargs
         self.metadata_kwargs = metadata_kwargs
@@ -54,7 +52,7 @@ class Trainer:
         Fit deep learning model
         """
         if not self.wandb_kwargs["id"]:
-            run_id = self.wandb_connector.util.generate_id()
+            run_id = wandb.util.generate_id()
             print("--------------------")
             print("run_id", run_id)
             print("--------------------")
@@ -71,27 +69,27 @@ class Trainer:
 
         # Initialize WandB
         self.wandb_kwargs.update({"config": self.hypm_kwargs})
-        with self.wandb_connector.init(**self.wandb_kwargs):
+        with wandb.init(**self.wandb_kwargs):
 
             if self.metadata_kwargs["path_to_load_model"]:
                 checkpoint = torch.load(checkpoint_load_path)
                 self.model.load_state_dict(checkpoint["model_state_dict"])
                 self.model.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
                 epoch = checkpoint["epoch"]
-                train_loss = checkpoint["train_loss"]
-                test_loss = checkpoint["test_loss"]
 
             # Start Training the model
             bar = tqdm(range(1, self.hypm_kwargs["epochs"] + 1), desc=f"Epoch 1/{self.hypm_kwargs['epochs']} ")
 
             for epoch in bar:
-                train_loss = self.model.train_one_epoch(self.train_loader)
-                test_loss = self.model.test_one_epoch(self.test_loader)
+                logs_train = self.model.train_one_epoch(self.train_loader)
+                logs_test = self.model.test_one_epoch(self.test_loader)
 
-                self.wandb_connector.log({"Train Loss": train_loss, "Test Loss": test_loss})
+                self.model.log_one_epoch(logs_train, logs_test)
 
                 bar.set_description(
-                    f"Epoch {epoch}/{self.hypm_kwargs['epochs']} " f"Train_loss:{round(train_loss, 3)} " f"Test_loss:{round(test_loss, 3)} "
+                    f"Epoch {epoch}/{self.hypm_kwargs['epochs']} "
+                    f"Train_loss:{round(logs_train['train_total_loss'], 3)} "
+                    f"Test_loss:{round(logs_test['test_total_loss'], 3)} "
                 )
 
                 # Save the model
@@ -101,8 +99,8 @@ class Trainer:
                             "epoch": epoch,
                             "model_state_dict": self.model.state_dict(),
                             "optimizer_state_dict": self.model.optimizer.state_dict(),
-                            "train_loss": train_loss,
-                            "test_loss": test_loss,
+                            "train_loss": logs_train["train_total_loss"],
+                            "test_loss": logs_test["test_total_loss"],
                         },
                         checkpoint_path,
                     )
@@ -143,7 +141,7 @@ class Trainer:
             ds_train,
             batch_size=self.hypm_kwargs["train_batch_size"],
             shuffle=True,
-            num_workers=2,
+            num_workers=self.metadata_kwargs["num_workers"],
             drop_last=True,
         )
 
@@ -152,7 +150,7 @@ class Trainer:
             ds_test,
             batch_size=self.hypm_kwargs["test_batch_size"],
             shuffle=True,
-            num_workers=2,
+            num_workers=self.metadata_kwargs["num_workers"],
             drop_last=True,
         )
 

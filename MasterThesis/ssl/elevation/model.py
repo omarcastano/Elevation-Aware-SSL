@@ -9,6 +9,7 @@ from torch.utils.data.dataloader import DataLoader
 from lightly.loss import NTXentLoss
 from tqdm.notebook import tqdm
 
+import wandb
 
 BACKBONES = {
     "resnet18": resnet18,
@@ -136,7 +137,7 @@ class ElevationSSL(nn.Module):
         running_regression_loss = 0
 
         self.train()
-        bar = tqdm(train_loader, leave=True, position=1)
+        bar = tqdm(train_loader, leave=False, position=1)
         for epoch, (input1, input2, input3, mask) in enumerate(bar, 1):
 
             # Set zero gradients for every batch
@@ -176,8 +177,16 @@ class ElevationSSL(nn.Module):
 
         self.scheduler.step()
         running_loss = running_loss / epoch
+        running_contrastive_loss = running_contrastive_loss / epoch
+        running_regression_loss = running_regression_loss / epoch
 
-        return running_loss
+        logs = {
+            "train_total_loss": running_loss,
+            "train_contrastive_loss": running_contrastive_loss,
+            "train_regression_loss": running_contrastive_loss,
+        }
+
+        return logs
 
     # Test one epoch
     def test_one_epoch(self, test_loader: DataLoader):
@@ -196,7 +205,7 @@ class ElevationSSL(nn.Module):
 
         # self.eval()
 
-        bar = tqdm(test_loader, leave=True, position=1)
+        bar = tqdm(test_loader, leave=False, position=1)
 
         with torch.no_grad():
             for epoch, (input1, input2, input3, mask) in enumerate(bar, 1):
@@ -228,5 +237,19 @@ class ElevationSSL(nn.Module):
                 )
 
         running_loss = running_loss / epoch
+        running_contrastive_loss = running_contrastive_loss / epoch
+        running_regression_loss = running_regression_loss / epoch
 
-        return running_loss
+        logs = {
+            "test_total_loss": running_loss,
+            "test_contrastive_loss": running_contrastive_loss,
+            "test_regression_loss": running_contrastive_loss,
+        }
+
+        return logs
+
+    @staticmethod
+    def log_one_epoch(logs_train, logs_test):
+
+        wandb.log(logs_train)
+        wandb.log(logs_test)
