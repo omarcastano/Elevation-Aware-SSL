@@ -25,21 +25,23 @@ class ResNetEncoder(nn.Module):
 
     Arguments
     ----------
-        backbone : str
+        backbone : str, default='resnet50'
             Name of the classification model that will be used as an encoder (a.k.a backbone)
             to extract features of different spatial resolution. Possible options are: resnet18, resnet50
-        depth: int
+        depth: int, default=5
             A number of stages used in encoder in range [3, 5]. Each stage generate features
             two times smaller in spatial dimensions than previous one (e.g. for depth 0 we will have features
             with shapes [(N, C, H, W),], for depth 1 - [(N, C, H, W), (N, C, H // 2, W // 2)] and so on).
-            Default is 5
-
+            if cifar=True, the first stage will not reduce de spatial dimensions of the input image.
+        cifar : bool, default=False
+            If True removes the first max pooling layer, and the kernel in the
+            first convolutional layer is change from 7x7 to 3x3.
     """
 
-    def __init__(self, backbone: str = "resnet50", depth=5) -> None:
+    def __init__(self, backbone: str = "resnet50", depth=5, cifar: bool = False) -> None:
         super().__init__()
 
-        self.backbone = BACKBONES[backbone]()
+        self.backbone = BACKBONES[backbone](cifar=cifar)
         self.backbone.out_channels = out_channels[backbone]
         self.depth = depth
 

@@ -26,37 +26,90 @@ from MasterThesis.models.classification.randominit import (
 
 CLASSIFIERS = {"linear": LinearClassifier, "non_linear": NoneLinearClassifier}
 
+AUGMENTATIONS = {
+    "horizontal_flip_prob": 0.5,
+    "vertical_flip_prob": 0.5,
+    "resize_scale": (0.8, 1.0),
+    "brightness": 0.1,
+    "contrast": 0.1,
+    "saturation": 0.1,
+    "hue": 0.1,
+    "color_jitter_prob": 0.2,
+    "gray_scale_prob": 0.2,
+}
 
-def data_augmentation(img):
+# Data loader
+def data_augmentation(img, augment: dict = None):
     """
-    Data augmentation such as vertical and horizontal flip,
+    Data augmentation for such as vertical and horizontal flip,
     random rotation and random sized crop.
 
     Arguments:
-        image: 3D numpy array
-            input image with shape (H,W,C)
+        img: 3D numpy array
+            input image with shape (C,H,W)
+        transforms: dictionary
+            kwargs to transform images
     """
 
+    augment = augment or AUGMENTATIONS
+
+    # Defines Color Jitter
+    color_jitter = transforms.ColorJitter(
+        brightness=augment["brightness"],
+        contrast=augment["contrast"],
+        saturation=augment["saturation"],
+        hue=augment["hue"],
+    )
+
+    # Defines data augmentation
     augmentation = transforms.Compose(
         [
-            transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomVerticalFlip(p=0.5),
-            transforms.RandomResizedCrop(size=img.shape[1], scale=(0.8, 1.0)),
-            transforms.RandomApply([transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1)], p=0.2),
-            transforms.RandomGrayscale(p=0.2),
-            # transforms.GaussianBlur(kernel_size=3),
+            transforms.RandomHorizontalFlip(p=augment["vertical_flip_prob"]),
+            transforms.RandomVerticalFlip(p=augment["horizontal_flip_prob"]),
+            transforms.RandomResizedCrop(size=img.shape[1], scale=augment["resize_scale"]),
+            transforms.RandomApply([color_jitter], p=augment["color_jitter_prob"]),
+            transforms.RandomGrayscale(p=augment["gray_scale_prob"]),
         ]
     )
 
-    img1 = augmentation(img)
+    img = augmentation(img)
 
-    return img1
+    return img
 
 
 class CustomDataset(torch.utils.data.Dataset):
 
     """
     This class creates a custom pytorch dataset
+
+
+    This class creates a custom dataset for implementing
+    SimCLR self-supervised learning methodology
+
+    Arguments:
+        path_to_images: str
+            path to the folder where images are stored
+        metadata: data frame
+            dataframe with the names of images and labels
+        return_original: bool, default=False
+            If True also return the original image,
+            so the output will be (original, augmented1, augmented2), else
+            the output will ve (augmented1, augmented2)
+        normalizing_factor: float, default=6000
+            value to clip and normalize input images
+        augment: dict
+            dictionary with the specific transformation to apply
+            to input images. default values:
+            augment = {
+                    "horizontal_flip_prob": 0.5,
+                    "vertical_flip_prob": 0.5,
+                    "resize_scale": (0.7, 1.0),
+                    "brightness": 0.2,
+                    "contrast": 0.2,
+                    "saturation": 0.2,
+                    "hue": 0.2,
+                    "color_jitter_prob": 0.8,
+                    "gray_scale_prob": 0.2,
     """
 
     def __init__(
@@ -65,26 +118,14 @@ class CustomDataset(torch.utils.data.Dataset):
         metadata: pd.DataFrame,
         return_original: bool = False,
         normalizing_factor: int = 6000,
-        augmentation: bool = False,
+        augment: bool = None,
     ):
-
-        """
-        Arguments:
-        ----------
-            path_to_images: path to the folder where images are stored
-            path_to_labels: path to the folder where labels are stored
-            metadata: dataframe with the names of images and labels
-            return_original: If True also return the original image,
-                so the output will be (original, augmented, label), else
-                the output will ve (augmented label)
-        """
-
         super().__init__()
         self.metadata = metadata
         self.path_to_images = path_to_images
         self.return_original = return_original
         self.normalizing_factor = normalizing_factor
-        self.augmentation = augmentation
+        self.augment = augment
 
     def __len__(self):
 
@@ -107,9 +148,9 @@ class CustomDataset(torch.utils.data.Dataset):
         # Load label
         label = self.metadata.Labels.tolist()[index]
 
-        if self.augmentation:
+        if self.augment:
             # Data Augmentation
-            image = data_augmentation(image)
+            image = data_augmentation(image, self.augment)
 
         # Set data types compatible with pytorch
         if self.return_original:
@@ -390,15 +431,16 @@ def train_model(
                 metadata_kwargs["device"],
             )
 
-            last_epoch = epoch + 1 == wandb_kwargs["config"]["epochs"]
-            _, logs_test, metrics_by_threshold = test_one_epoch(
-                test_loader,
-                model,
-                loss_fn,
-                metadata_kwargs["select_classes"],
-                metadata_kwargs["device"],
-                last_epoch,
-            )
+            if ((epoch + 1) % 10 == 0) | (epoch + 1 == 1):
+                last_epoch = epoch + 1 == wandb_kwargs["config"]["epochs"]
+                _, logs_test, metrics_by_threshold = test_one_epoch(
+                    test_loader,
+                    model,
+                    loss_fn,
+                    metadata_kwargs["select_classes"],
+                    metadata_kwargs["device"],
+                    last_epoch,
+                )
 
             print(f'\n    Train Loss: { logs_train["Train loss"] }')
             print(f'\n    Test Loss: { logs_test["Test loss"] }')
@@ -524,14 +566,14 @@ def run_train(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_train"],
         normalizing_factor=wandb_kwargs["config"]["normalizing_factor"],
-        augmentation=True,
+        augment=wandb_kwargs["config"]["augment"],
     )
 
     ds_test = CustomDataset(
         metadata_kwargs["path_to_images"],
         metadata_kwargs["metadata_test"],
         normalizing_factor=wandb_kwargs["config"]["normalizing_factor"],
-        augmentation=False,
+        augment=None,
     )
 
     ds_train_sample = CustomDataset(
@@ -539,7 +581,7 @@ def run_train(
         metadata_kwargs["metadata_train"],
         normalizing_factor=wandb_kwargs["config"]["normalizing_factor"],
         return_original=True,
-        augmentation=True,
+        augment=wandb_kwargs["config"]["augment"],
     )
 
     visualize_augmented_images(ds_train_sample, classes_name=metadata_kwargs["select_classes"])
@@ -683,10 +725,6 @@ def generate_metadata_train_test_stratified_cv(
     """
 
     n_total_images = metadata.shape[0]
-    n_images_train = int(n_total_images * train_size)
-
-    print(f"Number fo total images : {n_total_images}")
-    print(f"Number of images to train: {n_images_train} ({train_size*100:.3f}%)")
 
     metadata_train, metadata_test = [], []
 
@@ -698,5 +736,9 @@ def generate_metadata_train_test_stratified_cv(
         )
         metadata_train.append(train_dataset)
         metadata_test.append(metadata.iloc[test].copy().reset_index(drop=True))
+
+    print(f"Number fo total images : {n_total_images}")
+    print(f"Number of images to train: {metadata_train[1].shape[0]}, {metadata_train[1].shape[0]/n_total_images}")
+    print(f"Number of images to test: {metadata_test[1].shape[0]/n_total_images}")
 
     return metadata_train, metadata_test

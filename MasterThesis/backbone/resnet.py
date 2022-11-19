@@ -136,15 +136,20 @@ class BottleNeck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block: BasicBlock, layers: List[int], num_classes: int, in_channels: int) -> None:
+    def __init__(self, block: BasicBlock, layers: List[int], num_classes: int, in_channels: int, cifar: bool = False) -> None:
         super().__init__()
 
         self.in_planes = 64
 
-        self.conv1 = nn.Conv2d(in_channels, self.in_planes, kernel_size=7, stride=2, padding=3, bias=False)
+        if cifar:
+            self.maxpool = nn.Identity()
+            self.conv1 = nn.Conv2d(in_channels, self.in_planes, kernel_size=3, stride=1, padding=1, bias=False)
+        else:
+            self.conv1 = nn.Conv2d(in_channels, self.in_planes, kernel_size=7, stride=2, padding=3, bias=False)
+            self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
         self.bn1 = nn.BatchNorm2d(self.in_planes)
         self.relu = nn.ReLU()
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
         self.layer1 = self._make_layer(block, layers[0], planes=64, stride=1)
         self.layer2 = self._make_layer(block, layers[1], planes=128, stride=2)
@@ -199,7 +204,7 @@ class ResNet(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
 
-def resnet18(num_classes: int = 1000, num_channels: int = 3):
+def resnet18(num_classes: int = 1000, num_channels: int = 3, cifar: bool = False):
     """
     Returns ResNet18
 
@@ -207,14 +212,17 @@ def resnet18(num_classes: int = 1000, num_channels: int = 3):
     ----------
         num_classes: int, default=1000
             number of classes
-        num_channels: int, channels=3
+        num_channels: int, default=3
             number of input image channels
+        cifar: bool, default=3
+            if True removes the first max pooling layer, and the kernel in the
+            first convolutional layer is change from 7x7 to 3x3.
     """
 
-    return ResNet(BasicBlock, [2, 2, 2, 2], num_classes=num_classes, in_channels=num_channels)
+    return ResNet(BasicBlock, [2, 2, 2, 2], num_classes=num_classes, in_channels=num_channels, cifar=cifar)
 
 
-def resnet50(num_classes: int = 1000, num_channels: int = 3):
+def resnet50(num_classes: int = 1000, num_channels: int = 3, cifar: bool = False):
     """
     Returns ResNet50
 
@@ -222,8 +230,11 @@ def resnet50(num_classes: int = 1000, num_channels: int = 3):
     ----------
         num_classes: int, default=1000
             number of classes
-        num_channels: int, channels=3
+        num_channels: int, default=3
             number of input image channels
+        cifar: bool, default=3
+            if True removes the first max pooling layer, and the kernel in the
+            first convolutional layer is change from 7x7 to 3x3.
     """
 
-    return ResNet(BottleNeck, [3, 4, 6, 3], num_classes=num_classes, in_channels=num_channels)
+    return ResNet(BottleNeck, [3, 4, 6, 3], num_classes=num_classes, in_channels=num_channels, cifar=cifar)

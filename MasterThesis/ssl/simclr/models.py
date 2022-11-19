@@ -29,8 +29,8 @@ class SimCLR(nn.Module):
     def __init__(
         self,
         backbone: str = "resnet50",
-        proj_hidden_dim: int = 128,
-        proj_output_dim: int = 512,
+        proj_hidden_dim: int = 512,
+        proj_output_dim: int = 128,
         cifar: bool = False,
     ) -> None:
 
