@@ -45,8 +45,7 @@ class ResNetEncoder(nn.Module):
         self.backbone.out_channels = out_channels[backbone]
         self.depth = depth
 
-        del self.backbone.fc
-        del self.backbone.avgpool
+        self.backbone.fc = torch.nn.Identity()
 
     def get_stages(self):
 

@@ -7,7 +7,7 @@ from typing import List
 from MasterThesis.segmentation.sl.model import Unet
 from torch.utils.data.dataloader import DataLoader
 from lightly.loss import NTXentLoss
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 
 import wandb
 
@@ -57,7 +57,7 @@ class ElevationSSL(nn.Module):
 
         self.unet = Unet(backbone, decoder_channels=decoder_channels, input_size=input_size, output_size=output_size)
 
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.backbone = self.unet.encoder.backbone
 
         self.projector = nn.Sequential(
             nn.Linear(in_features=self.unet.encoder.backbone.in_planes, out_features=proj_hidden_dim, bias=False),
@@ -68,15 +68,13 @@ class ElevationSSL(nn.Module):
 
     def forward(self, x, x_i, x_j):
 
-        x_i = self.unet.encoder(x_i)[-1]
-        x_j = self.unet.encoder(x_j)[-1]
+        x_i = self.backbone(x_i)
+        x_j = self.backbone(x_j)
 
-        z_i = self.avgpool(x_i)
-        z_i = torch.flatten(z_i, 1)
+        z_i = torch.flatten(x_i, 1)
         z_i = self.projector(z_i)
 
-        z_j = self.avgpool(x_j)
-        z_j = torch.flatten(z_j, 1)
+        z_j = torch.flatten(x_j, 1)
         z_j = self.projector(z_j)
 
         mask = self.unet(x)
@@ -183,7 +181,7 @@ class ElevationSSL(nn.Module):
         logs = {
             "train_total_loss": running_loss,
             "train_contrastive_loss": running_contrastive_loss,
-            "train_regression_loss": running_contrastive_loss,
+            "train_regression_loss": running_regression_loss,
         }
 
         return logs
@@ -243,7 +241,7 @@ class ElevationSSL(nn.Module):
         logs = {
             "test_total_loss": running_loss,
             "test_contrastive_loss": running_contrastive_loss,
-            "test_regression_loss": running_contrastive_loss,
+            "test_regression_loss": running_regression_loss,
         }
 
         return logs
