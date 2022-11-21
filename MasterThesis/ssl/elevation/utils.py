@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import torch
 
 
-def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10, brightness: float = 0.0) -> None:
+def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10, brightness: float = 0.0, **kwargs) -> None:
     """
     Plots augmented images used to pre-train a elevations maps used to pre-train backbone
 

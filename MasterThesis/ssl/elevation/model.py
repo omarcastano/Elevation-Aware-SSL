@@ -7,7 +7,7 @@ from typing import List
 from MasterThesis.segmentation.sl.model import Unet
 from torch.utils.data.dataloader import DataLoader
 from lightly.loss import NTXentLoss
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 
 import wandb
 
@@ -58,6 +58,10 @@ class ElevationSSL(nn.Module):
         self.unet = Unet(backbone, decoder_channels=decoder_channels, input_size=input_size, output_size=output_size)
 
         self.backbone = self.unet.encoder.backbone
+        self.backbone1 = self.unet.encoder.backbone
+        self.backbone2 = self.unet.encoder.backbone
+        self.backbone3 = self.unet.encoder.backbone
+        self.backbone4 = self.unet.encoder.backbone
 
         self.projector = nn.Sequential(
             nn.Linear(in_features=self.unet.encoder.backbone.in_planes, out_features=proj_hidden_dim, bias=False),
@@ -120,7 +124,7 @@ class ElevationSSL(nn.Module):
         self.device = device
 
     # Train one epoch
-    def train_one_epoch(self, train_loader: DataLoader):
+    def train_one_epoch(self, train_loader: DataLoader, **kwargs):
         """
         Train model for one epoch
 
@@ -135,7 +139,7 @@ class ElevationSSL(nn.Module):
         running_regression_loss = 0
 
         self.train()
-        bar = tqdm(train_loader, leave=False, position=1)
+        bar = tqdm(train_loader, leave=True, position=1)
         for epoch, (input1, input2, input3, mask) in enumerate(bar, 1):
 
             # Set zero gradients for every batch
@@ -187,7 +191,7 @@ class ElevationSSL(nn.Module):
         return logs
 
     # Test one epoch
-    def test_one_epoch(self, test_loader: DataLoader):
+    def test_one_epoch(self, test_loader: DataLoader, **kwargs):
         """
         Evaluate model performance using a test set
 
@@ -203,7 +207,7 @@ class ElevationSSL(nn.Module):
 
         # self.eval()
 
-        bar = tqdm(test_loader, leave=False, position=1)
+        bar = tqdm(test_loader, leave=True, position=1)
 
         with torch.no_grad():
             for epoch, (input1, input2, input3, mask) in enumerate(bar, 1):
@@ -247,7 +251,7 @@ class ElevationSSL(nn.Module):
         return logs
 
     @staticmethod
-    def log_one_epoch(logs_train, logs_test):
+    def log_one_epoch(logs_train, logs_test, **kwargs):
 
         wandb.log(logs_train)
         wandb.log(logs_test)

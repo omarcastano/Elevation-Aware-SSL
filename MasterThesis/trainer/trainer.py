@@ -85,7 +85,7 @@ class Trainer:
                 # Test the model for one epoch
                 if (epoch % 5 == 0) | (epoch == 1):
                     last_epoch = epoch == self.hypm_kwargs["epochs"]
-                    logs_test = self.model.test_one_epoch(self.test_loader, last_epoch)
+                    logs_test = self.model.test_one_epoch(self.test_loader, last_epoch=last_epoch)
 
                     # Save the model
                     if self.metadata_kwargs["path_to_save_model"]:
@@ -102,7 +102,7 @@ class Trainer:
 
                         torch.save(self.model, self.model_path)
 
-                self.model.log_one_epoch(logs_train, logs_test, last_epoch)
+                self.model.log_one_epoch(logs_train, logs_test, last_epoch=last_epoch)
 
                 bar.set_description(
                     f"Epoch {epoch}/{self.hypm_kwargs['epochs']} "
