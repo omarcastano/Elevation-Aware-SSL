@@ -76,10 +76,11 @@ class Trainer:
                 self.model.load_state_dict(checkpoint["model_state_dict"])
                 self.model.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
                 epoch = checkpoint["epoch"]
+                bar = tqdm(range(epoch, self.hypm_kwargs["epochs"] + 1), desc=f"Epoch {epoch}/{self.hypm_kwargs['epochs']} ")
+            else:
+                bar = tqdm(range(1, self.hypm_kwargs["epochs"] + 1), desc=f"Epoch 1/{self.hypm_kwargs['epochs']} ")
 
             # Start Training the model
-            bar = tqdm(range(1, self.hypm_kwargs["epochs"] + 1), desc=f"Epoch 1/{self.hypm_kwargs['epochs']} ")
-
             for epoch in bar:
                 logs_train = self.model.train_one_epoch(self.train_loader)
                 logs_test = self.model.test_one_epoch(self.test_loader)
