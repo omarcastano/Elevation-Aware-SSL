@@ -6,7 +6,7 @@ from MasterThesis.backbone import resnet18, resnet50
 from typing import List
 from torch.utils.data.dataloader import DataLoader
 from lightly.loss import NTXentLoss
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 
 
 BACKBONES = {
