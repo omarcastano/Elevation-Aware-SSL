@@ -6,11 +6,12 @@ from typing import List, Callable
 from tqdm.notebook import tqdm
 from MasterThesis.ssl.elevation.model import ElevationSSL
 from MasterThesis.classification.model import Classifier
+from MasterThesis.ssl.simclr.models import SimCLR
 
 import wandb
 
 os.environ["WANDB_SILENT"] = "true"
-MODELS = {"ElevationSSL": ElevationSSL, "Classifier": Classifier}
+MODELS = {"ElevationSSL": ElevationSSL, "Classifier": Classifier, "SimCLR": SimCLR}
 
 
 class Trainer:
@@ -79,7 +80,7 @@ class Trainer:
             )
             for epoch in bar:
 
-                # Train the for one epoch
+                # Train the model for one epoch
                 logs_train = self.model.train_one_epoch(self.train_loader)
 
                 # Test the model for one epoch
@@ -109,6 +110,14 @@ class Trainer:
                     f"Train_loss:{round(logs_train['train_total_loss'], 3)} "
                     f"Test_loss:{round(logs_test['test_total_loss'], 3)} "
                 )
+
+                if self.hypm_kwargs["fine_tune"] and (self.hypm_kwargs["ft_epoch"] == epoch):
+
+                    for parameters in self.model.backbone.parameters():
+                        parameters.requires_grad = True
+
+                    for g in self.model.optimizer.param_groups:
+                        g["lr"] = self.hypm_kwargs["ft_lr"]
 
     def configure_trainer(self):
 
