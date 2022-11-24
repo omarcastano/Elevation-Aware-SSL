@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10) -> None:
+def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10, brightness: float = 0.0, **kwargs) -> None:
     """
     Plots augmented images used to pre-train a model using SimCLR methodology
 
@@ -25,9 +25,9 @@ def visualize_augmented_images(dataset: torch.utils.data.Dataset, n: int = 10) -
         image_1 = np.array(image_1).transpose(1, 2, 0)
         image_2 = np.array(image_2).transpose(1, 2, 0)
 
-        ax[0, i].imshow(image)
-        ax[1, i].imshow(image_1)
-        ax[2, i].imshow(image_2)
+        ax[0, i].imshow(image + brightness)
+        ax[1, i].imshow(image_1 + brightness)
+        ax[2, i].imshow(image_2 + brightness)
 
         ax[0, i].set_title("Originale")
         ax[1, i].set_title("Augmented 1")
