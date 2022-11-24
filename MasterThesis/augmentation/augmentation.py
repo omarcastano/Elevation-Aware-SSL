@@ -1,3 +1,7 @@
+"""
+This Module provides functions to apply data augmentation 
+"""
+
 from torchvision import transforms
 
 AUGMENTATIONS = {
