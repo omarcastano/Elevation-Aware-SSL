@@ -1,3 +1,7 @@
+"""
+This module provides a custom implementation o ResNet architecture
+"""
+
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
@@ -136,6 +140,25 @@ class BottleNeck(nn.Module):
 
 
 class ResNet(nn.Module):
+    """
+    Main class that can be used to create a different types of resnet model such as
+    resnet18, resnet34, resnet50, resnet101. etc
+
+    Arguments:
+    ----------
+        block: torch module
+            kind of block to be used, possible options BasiBlock,
+            BottleNeck
+        num_classes: int, default=1000
+            number of classes
+        in_channels: int, default=3
+            number of input image channels
+        cifar: bool, default=3
+            if True removes the first max pooling layer, and the kernel in the
+            first convolutional layer is change from 7x7 to 3x3.
+
+    """
+
     def __init__(self, block: BasicBlock, layers: List[int], num_classes: int, in_channels: int, cifar: bool = False) -> None:
         super().__init__()
 

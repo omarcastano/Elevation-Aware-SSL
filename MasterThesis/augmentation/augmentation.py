@@ -16,9 +16,8 @@ AUGMENTATIONS = {
     "gray_scale_prob": 0.2,
 }
 
-# Data loader
+# Data Augmentation
 def data_augmentation(img, augment: dict = None):
-
     """
     Data augmentation such as vertical and horizontal flip,
     random rotation and random sized crop.
