@@ -251,7 +251,18 @@ class ElevationSSL(nn.Module):
         return logs
 
     @staticmethod
-    def log_one_epoch(logs_train, logs_test, **kwargs):
+    def log_one_epoch(logs_train: dict, logs_test: dict, **kwargs):
+        """
+        logs metrics to wandb
+
+        Arguments:
+        ----------
+            logs_train : dict
+                train metrics
+            logs_test : dict
+                test metrics
+        """
+
+        logs_train.update(logs_test)
 
         wandb.log(logs_train)
-        wandb.log(logs_test)
