@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from MasterThesis import EDA
-from MasterThesis.augmentation import data_augmentation
+from MasterThesis.augmentation import data_augmentation, data_augmentation_v2
 
 
 class CustomDataset(torch.utils.data.Dataset):
@@ -70,14 +70,15 @@ class CustomDataset(torch.utils.data.Dataset):
 
         original_image = image.copy()
 
-        image = torch.from_numpy(image.astype(np.float32))
-
         # Load label
         label = self.metadata.Labels.tolist()[index]
 
         if self.augment:
             # Data Augmentation
-            image = data_augmentation(image, self.augment)
+            image = data_augmentation_v2(image, augment=self.augment)
+
+        if isinstance(image, np.ndarray):
+            image = torch.from_numpy(image.astype(np.float32))
 
         if self.return_original:
 
