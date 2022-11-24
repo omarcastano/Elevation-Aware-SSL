@@ -4,7 +4,7 @@ from torch import nn
 
 
 from typing import List
-from MasterThesis.segmentation.sl.model import Unet
+from MasterThesis.segmentation.model import Unet
 from torch.utils.data.dataloader import DataLoader
 from lightly.loss import NTXentLoss
 from tqdm.notebook import tqdm
@@ -58,10 +58,6 @@ class ElevationSSL(nn.Module):
         self.unet = Unet(backbone, decoder_channels=decoder_channels, input_size=input_size, output_size=output_size)
 
         self.backbone = self.unet.encoder.backbone
-        self.backbone1 = self.unet.encoder.backbone
-        self.backbone2 = self.unet.encoder.backbone
-        self.backbone3 = self.unet.encoder.backbone
-        self.backbone4 = self.unet.encoder.backbone
 
         self.projector = nn.Sequential(
             nn.Linear(in_features=self.unet.encoder.backbone.in_planes, out_features=proj_hidden_dim, bias=False),
