@@ -92,7 +92,7 @@ class CustomDataset(torch.utils.data.Dataset):
                 }
     """
 
-    def __init__(self, path_to_images, metadata, return_original=False, normalizing_factor: int = 6000, augment: dict = None):
+    def __init__(self, path_to_images, metadata, return_original=False, normalizing_factor: int = 6000, augment: dict = None, **kwargs):
 
         super().__init__()
         self.augment = augment
