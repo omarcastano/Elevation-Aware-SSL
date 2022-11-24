@@ -1,3 +1,7 @@
+"""
+This module provides utilities
+"""
+
 import torch
 import numpy as np
 import pandas as pd
@@ -46,12 +50,11 @@ def visualize_augmented_images(
 def generate_metadata_train_test_stratified_cv(
     metadata: pd.DataFrame, train_size: float, n_split: int = 5
 ) -> Tuple[List[pd.DataFrame], List[pd.DataFrame]]:
-
     """
     Provides train/test indices to split data in train/test sets. Split
-    dataset into k consecutive foldsenerate train and test dataset via k-fold setss
+    dataset into k consecutive folds to train and test dataset via k-fold sets
 
-    Argguments:
+    Arguments:
     ----------
         metadata: dataframe with the path to images and labels
         train_size: percentage of in each train set

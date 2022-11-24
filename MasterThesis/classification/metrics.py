@@ -1,3 +1,7 @@
+"""
+This module provides metrics to evaluate a classification downstream task
+"""
+
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -204,7 +208,6 @@ class threshold_metric_evaluation:
 
 
 def plot_metrics_from_logs(logs, metric="F1_score"):
-
     """
     Helper function to plot metrics from wandb logs
 

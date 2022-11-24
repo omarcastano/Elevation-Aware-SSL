@@ -1,3 +1,7 @@
+"""
+In this module it is built a classifier 
+"""
+
 import torch
 from torch import nn
 import numpy as np

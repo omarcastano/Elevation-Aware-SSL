@@ -1,3 +1,7 @@
+"""
+Creates a custom dataset to train a classification model
+"""
+
 import torch
 
 import numpy as np

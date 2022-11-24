@@ -3,7 +3,7 @@ import torch
 import numpy as np
 
 from MasterThesis import EDA
-from MasterThesis.ssl.augmentation import data_augmentation
+from MasterThesis.augmentation import data_augmentation
 
 
 class CustomDataset(torch.utils.data.Dataset):
