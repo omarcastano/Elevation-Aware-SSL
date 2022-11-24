@@ -5,11 +5,11 @@ from sklearn.metrics import recall_score, precision_score, f1_score
 
 
 def per_class_accuracy(conf_mt):
-
     """
     Computes per class accuracy
 
-    Argumetns:
+    Arguments:
+    ----------
         y_true: 1D numpy array
             true labels
         y_pred: 1D numpy array
@@ -208,7 +208,7 @@ def plot_metrics_from_logs(logs, metric="F1_score"):
     """
     Helper function to plot metrics from wandb logs
 
-    Argumetns:
+    Arguments:
     ----------
         logs: dict
             WandB dictionary with logs
