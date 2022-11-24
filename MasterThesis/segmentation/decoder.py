@@ -1,13 +1,9 @@
-from MasterThesis.backbone.resnet import ResNet, resnet50, resnet18, conv3x3
+from MasterThesis.backbone.resnet import conv3x3
 import torch
 from torch import nn
 
 torch.cuda.empty_cache()
 import torch.nn.functional as F
-from torchsummary import summary
-import numpy as np
-
-from typing import List, Tuple
 
 
 class DecoderBlock(nn.Module):

@@ -37,7 +37,6 @@ AUGMENTATIONS = {
 
 # Data loader
 def data_augmentation(img, label, augment: dict = None):
-
     """
     Data augmentation for such as vertical and horizontal flip,
     random rotation and random sized crop.

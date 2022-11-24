@@ -6,7 +6,7 @@ from . import ResNetDecoder, ResNetEncoder, SegmentationHead
 
 class Unet(nn.Module):
     """
-    Unet_ is a fully convolution neural network for image semantic segmentation. Consist of *encoder*
+    Unet is a fully convolution neural network for image semantic segmentation. Consist of *encoder*
     and *decoder* parts connected with *skip connections*. Encoder extract features of different spatial
     resolution (skip connections) which are used by decoder to define accurate segmentation mask. Use *concatenation*
     for fusing decoder blocks with skip connections.ResNet-based Unet Encoder
