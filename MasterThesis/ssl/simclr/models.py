@@ -113,7 +113,8 @@ class SimCLR(nn.Module):
         running_loss = 0
 
         self.train()
-        for epoch, (input1, input2) in enumerate(tqdm(train_loader), 1):
+        bar = tqdm(train_loader, leave=True, position=1)
+        for epoch, (input1, input2) in enumerate(bar, 1):
 
             # Set zero gradients for every batch
             self.optimizer.zero_grad()
@@ -134,6 +135,8 @@ class SimCLR(nn.Module):
             self.optimizer.step()
 
             running_loss += loss.item()
+
+            bar.set_description(f"(Trai_loss:{round(running_loss/epoch, 3)})")
 
         self.scheduler.step()
         running_loss = running_loss / epoch
@@ -157,8 +160,10 @@ class SimCLR(nn.Module):
 
         # model.eval()
 
+        bar = tqdm(test_loader, leave=True, position=1)
+
         with torch.no_grad():
-            for epoch, (input1, input2) in enumerate(tqdm(test_loader), 1):
+            for epoch, (input1, input2) in enumerate(bar, 1):
 
                 input1, input2 = input1.to(self.device), input2.to(self.device)
 
@@ -170,6 +175,8 @@ class SimCLR(nn.Module):
                 loss = self.loss(q, k)
 
                 running_loss += loss.item()
+
+                bar.set_description(f"(Test_loss:{round(running_loss/epoch, 3)})")
 
         running_loss = running_loss / epoch
 
