@@ -13,19 +13,19 @@ def lineplot_metrics_from_wandb(
     train_size=[0.02],
     metric="F1_score",
 ):
-
     """
     Returns a linplot where x-axis is the amount of training data and the y-axis
     is the mean score for a given metric across different runs (corss-validation).
 
-    Argumetns:
+    Arguments:
+    ----------
         wandb: wandb module
         project: wandb project name
         entity: name of the wandb entity
-        version: identifiers to filter wandb runs. This parametere is used to
+        version: identifiers to filter wandb runs. This parameter is used to
             select the wandb runs that will be use to in the final linplot. This parameter is
             also used to group and aggregate results.
-        train_size: train size used to train the model. This parametere is used to
+        train_size: train size used to train the model. This parameter is used to
             select the wandb runs that will be use to in the final lineplot
         metric: one of the follow metrics 'F1_score', 'Recall', 'Precision' or 'Acc_by_Class'
         line_plot: If true
