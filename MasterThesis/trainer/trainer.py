@@ -7,11 +7,17 @@ from tqdm.notebook import tqdm
 from MasterThesis.ssl.elevation.model import ElevationSSL
 from MasterThesis.classification.model import Classifier
 from MasterThesis.ssl.simclr.models import SimCLR
+from MasterThesis.segmentation.model import Unet
 
 import wandb
 
 os.environ["WANDB_SILENT"] = "true"
-MODELS = {"ElevationSSL": ElevationSSL, "Classifier": Classifier, "SimCLR": SimCLR}
+MODELS = {
+    "ElevationSSL": ElevationSSL,
+    "Classifier": Classifier,
+    "SimCLR": SimCLR,
+    "Unet": Unet,
+}
 
 
 class Trainer:
@@ -146,7 +152,7 @@ class Trainer:
             **self.metadata_kwargs,
         )
 
-        self.visualizer(ds_train_sample, **self.hypm_kwargs)
+        # self.visualizer(ds_train_sample, **self.hypm_kwargs)
 
         # define train dataloader
         self.train_loader = torch.utils.data.DataLoader(
@@ -165,6 +171,9 @@ class Trainer:
             num_workers=self.metadata_kwargs["num_workers"],
             drop_last=True,
         )
+
+        # Set random seed
+        torch.manual_seed(0)
 
         # Create folder to save model
         if self.metadata_kwargs["path_to_save_model"]:
