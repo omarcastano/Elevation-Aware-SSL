@@ -1,1 +1,1 @@
-from .augmentation import data_augmentation, data_augmentation_v2
+from .augmentation import data_augmentation, data_augmentation_v2, data_augmentation_segmentation
