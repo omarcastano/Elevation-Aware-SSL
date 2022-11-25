@@ -1,19 +1,12 @@
-import geopandas as gpd
 import matplotlib.pyplot as plt
-import pyproj
 import plotly.express as px
 import pandas as pd
-import h5py
 import os
-from shapely.geometry import Point, Polygon, MultiPolygon
 import matplotlib.patches as mpatches
 import numpy as np
 import MasterThesis.preprocessing as DP
-from shapely.geometry import Polygon
 import seaborn as sns
 from osgeo import gdal
-import earthpy as et
-import earthpy.spatial as es
 import earthpy.plot as ep
 from tqdm import tqdm
 import multiprocessing as mp
@@ -30,6 +23,7 @@ def read_geotiff_image(path):
     """
 
     image = gdal.Open(path).ReadAsArray()
+    image[image == 2] = 1
 
     return image
 
