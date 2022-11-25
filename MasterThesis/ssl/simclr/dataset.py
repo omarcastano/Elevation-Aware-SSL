@@ -2,11 +2,10 @@
 import torch
 import numpy as np
 from MasterThesis import EDA
-from MasterThesis.augmentation import data_augmentation
+from MasterThesis.augmentation import data_augmentation, data_augmentation_v2
 
 
 class CustomDataset(torch.utils.data.Dataset):
-
     """
     This class creates a custom dataset for implementing
     SimCLR self-supervised learning methodology
@@ -65,11 +64,14 @@ class CustomDataset(torch.utils.data.Dataset):
 
         original_image = image.copy()
 
-        image = torch.from_numpy(image.astype(np.float32))
-
         # Data Augmentation
-        image_1 = data_augmentation(image, self.augment)
-        image_2 = data_augmentation(image, self.augment)
+        image_1 = data_augmentation_v2(image, augment=self.augment)
+        image_2 = data_augmentation_v2(image, augment=self.augment)
+
+        if isinstance(image_1, np.ndarray):
+
+            image_1 = torch.from_numpy(image_1.astype(np.float32))
+            image_2 = torch.from_numpy(image_2.astype(np.float32))
 
         if self.return_original:
             return original_image, image_1, image_2
