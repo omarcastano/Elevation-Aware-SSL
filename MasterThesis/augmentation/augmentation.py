@@ -108,3 +108,54 @@ def data_augmentation_v2(img, label=None, augment: dict = None):
         img = augmented["image"].transpose(2, 0, 1)
 
         return img
+
+
+# Data loader
+def data_augmentation_segmentation(img, label, augment: dict = None):
+    """
+    Data augmentation vertical and horizontal flip, random rotation and random sized crop.
+
+    Arguments:
+        img: 3D numpy array
+            input image with shape (C,H,W)
+        label: 1D numpy array
+            labels with shape (H,W)
+        transforms: dictionary
+            kwargs to transform images
+    """
+
+    augment = augment or AUGMENTATIONS_V2
+
+    # Defines spatial transformation
+    spatial_augment = album.Compose(
+        [
+            album.VerticalFlip(p=augment["vertical_flip_prob"]),
+            album.HorizontalFlip(p=augment["horizontal_flip_prob"]),
+            album.RandomResizedCrop(height=img.shape[1], width=img.shape[2], scale=augment["resize_scale"], p=augment["resize_prob"]),
+        ]
+    )
+
+    # Defines Color Jitter
+    color_jitter = transforms.ColorJitter(
+        brightness=augment["brightness"],
+        contrast=augment["contrast"],
+        saturation=augment["saturation"],
+        hue=augment["hue"],
+    )
+
+    # Defines color augmentation
+    color_augment = transforms.Compose(
+        [
+            transforms.RandomApply([color_jitter], p=augment["color_jitter_prob"]),
+            transforms.RandomGrayscale(p=augment["gray_scale_prob"]),
+        ]
+    )
+
+    img = img.transpose(1, 2, 0)
+    augmented = spatial_augment(image=img, mask=label)
+    img, label = augmented["image"].transpose(2, 0, 1), augmented["mask"]
+
+    img = torch.from_numpy(img.astype(np.float32))
+    img = color_augment(img)
+
+    return img, label
