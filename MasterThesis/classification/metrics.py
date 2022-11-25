@@ -91,6 +91,7 @@ def model_evaluation(conf_mt, class_name, dataset_label="Test"):
     logs.update({f"{i}_Recall": j for i, j in zip(scores.index, scores[f"{dataset_label} Recall"])})
     logs.update({f"{i}_F1_score": j for i, j in zip(scores.index, scores[f"{dataset_label} F1_score"])})
     logs.update({f"{i}_Acc_by_Class": j for i, j in zip(scores.index, scores[f"{dataset_label} Acc_by_Class"])})
+    logs.update({f"{i}_IoU": j for i, j in zip(scores.index, scores[f"{dataset_label} IoU"])})
 
     logs.update(
         {
@@ -101,6 +102,8 @@ def model_evaluation(conf_mt, class_name, dataset_label="Test"):
             f"Weighted {dataset_label} Precision": weighted_precision_avg,
             f"Unweighted {dataset_label} Recall": unweighted_recall_avg,
             f"Weighted {dataset_label} Recall": weighted_recall_avg,
+            f"Unweighted {dataset_label} MIou": unweighted_iou,
+            f"Weighted {dataset_label} MIou": weighted_iou,
         }
     )
 
