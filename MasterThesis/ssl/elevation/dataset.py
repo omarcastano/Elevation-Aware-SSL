@@ -3,7 +3,7 @@ import torch
 import numpy as np
 
 from MasterThesis import EDA
-from MasterThesis.augmentation import data_augmentation
+from MasterThesis.augmentation import data_augmentation, data_augmentation_v2
 
 
 class CustomDataset(torch.utils.data.Dataset):
@@ -59,11 +59,10 @@ class CustomDataset(torch.utils.data.Dataset):
 
         original_image = image.copy()
         original_image = torch.from_numpy(original_image.astype(np.float32))
-        image = torch.from_numpy(image.astype(np.float32))
         elevation = torch.from_numpy(elevation.astype(np.float32))
 
         # Data Augmentation
-        image_1 = data_augmentation(image, self.augment)
-        image_2 = data_augmentation(image, self.augment)
+        image_1 = data_augmentation_v2(image, augment=self.augment)
+        image_2 = data_augmentation_v2(image, augment=self.augment)
 
         return original_image, image_1, image_2, elevation
