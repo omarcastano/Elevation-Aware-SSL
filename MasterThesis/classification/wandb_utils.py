@@ -31,6 +31,7 @@ def lineplot_metrics_from_wandb(
     """
 
     assert metric in [
+        "IoU",
         "F1_score",
         "Recall",
         "Precision",
