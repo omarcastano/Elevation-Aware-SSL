@@ -98,6 +98,7 @@ class ElevationSSL(nn.Module):
                  'epochs' number of epoch for CosineAnnealingLR lr_scheduler:
         """
 
+        # Set the device to train the model
         self.to(device)
 
         self.contrastive_loss = NTXentLoss(temperature=hypm_kwargs["temperature"])
@@ -105,6 +106,9 @@ class ElevationSSL(nn.Module):
 
         # Define loss function
         self.loss = [self.contrastive_loss, self.elevation_loss]
+
+        # Sets alpha parameter
+        self.alpha = hypm_kwargs["alpha"]
 
         # Optimizer
         self.optimizer = torch.optim.AdamW(
@@ -155,7 +159,7 @@ class ElevationSSL(nn.Module):
             pred_mask = pred_mask.squeeze()
             contrastive_loss = self.loss[0](q, k)
             regression_loss = self.loss[1](mask, pred_mask)
-            loss = contrastive_loss + regression_loss
+            loss = self.alpha * regression_loss + (1 - self.alpha) * contrastive_loss
 
             # compute gradients
             loss.backward()
