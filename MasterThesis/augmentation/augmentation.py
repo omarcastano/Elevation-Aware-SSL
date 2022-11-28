@@ -97,7 +97,7 @@ def data_augmentation_v2(img, label=None, augment: dict = None):
 
     img = img.transpose(1, 2, 0).astype(np.float32)
 
-    if label:
+    if label is not None:
         augmented = augmentation(image=img, mask=label)
         img, label = augmented["image"].transpose(2, 0, 1), augmented["mask"]
 
