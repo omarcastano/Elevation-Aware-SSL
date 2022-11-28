@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from MasterThesis import EDA
 import pandas as pd
-from MasterThesis.augmentation import data_augmentation_segmentation
+from MasterThesis.augmentation import data_augmentation_segmentation, data_augmentation_v2
 
 
 class CustomDataset(torch.utils.data.Dataset):
@@ -68,7 +68,7 @@ class CustomDataset(torch.utils.data.Dataset):
 
         # Data Augmentation
         if self.augment:
-            image, label = data_augmentation_segmentation(image, label, self.augment)
+            image, label = data_augmentation_v2(image, label, self.augment)
 
         if isinstance(image, np.ndarray):
             image = torch.from_numpy(image.astype(np.float32))

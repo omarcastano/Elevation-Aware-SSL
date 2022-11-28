@@ -104,7 +104,6 @@ class Trainer:
                     if stop_training:
                         logs_test = early_stopping.best_model.test_one_epoch(self.test_loader, last_epoch=True)
                         self.model.log_one_epoch(logs_train, logs_test, last_epoch=True)
-                        print(logs_test)
                         break
 
                     # Save the model
