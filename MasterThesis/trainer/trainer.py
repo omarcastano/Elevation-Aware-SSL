@@ -8,6 +8,7 @@ from MasterThesis.ssl.elevation.model import ElevationSSL
 from MasterThesis.classification.model import Classifier
 from MasterThesis.ssl.simclr.models import SimCLR
 from MasterThesis.segmentation.model import Unet
+from MasterThesis.classification.utils import EarlyStopping
 
 import wandb
 
@@ -76,6 +77,9 @@ class Trainer:
             print("run_id", run_id)
             print("--------------------")
 
+        if self.metadata_kwargs["metadata_valid"] is not None:
+            early_stopping = EarlyStopping(self.model, 1000, self.hypm_kwargs["patient"])
+
         # Initialize WandB
         self.wandb_kwargs.update({"config": self.hypm_kwargs})
         with wandb.init(**self.wandb_kwargs):
@@ -90,9 +94,18 @@ class Trainer:
                 logs_train = self.model.train_one_epoch(self.train_loader)
 
                 # Test the model for one epoch
-                if (epoch % 5 == 0) | (epoch == 1):
+                if (epoch % self.hypm_kwargs["eval_epoch"] == 0) | (epoch == 1):
                     last_epoch = epoch == self.hypm_kwargs["epochs"]
                     logs_test = self.model.test_one_epoch(self.test_loader, last_epoch=last_epoch)
+                    logs_valid = self.model.test_one_epoch(self.valid_loader, last_epoch=last_epoch)
+
+                    stop_training = early_stopping(self.model, logs_valid["test_total_loss"])
+
+                    if stop_training:
+                        logs_test = early_stopping.best_model.test_one_epoch(self.test_loader, last_epoch=True)
+                        self.model.log_one_epoch(logs_train, logs_test, last_epoch=True)
+                        print(logs_test)
+                        break
 
                     # Save the model
                     if self.metadata_kwargs["path_to_save_model"]:
@@ -143,6 +156,15 @@ class Trainer:
             **self.metadata_kwargs,
         )
 
+        # Defines validation dataset
+        if self.metadata_kwargs["metadata_valid"] is not None:
+            ds_valid = self.custom_dataloader(
+                metadata=self.metadata_kwargs["metadata_valid"],
+                normalizing_factor=self.hypm_kwargs["normalizing_factor"],
+                augment=self.hypm_kwargs["augment_test"],
+                **self.metadata_kwargs,
+            )
+
         # Defines sample dataset to visualize images
         ds_train_sample = self.custom_dataloader(
             metadata=self.metadata_kwargs["metadata_train"],
@@ -158,7 +180,7 @@ class Trainer:
         self.train_loader = torch.utils.data.DataLoader(
             ds_train,
             batch_size=self.hypm_kwargs["train_batch_size"],
-            shuffle=True,
+            shuffle=False,
             num_workers=self.metadata_kwargs["num_workers"],
             drop_last=True,
         )
@@ -167,10 +189,20 @@ class Trainer:
         self.test_loader = torch.utils.data.DataLoader(
             ds_test,
             batch_size=self.hypm_kwargs["test_batch_size"],
-            shuffle=True,
+            shuffle=False,
             num_workers=self.metadata_kwargs["num_workers"],
             drop_last=True,
         )
+
+        # Define validation dataloader
+        if self.metadata_kwargs["metadata_valid"] is not None:
+            self.valid_loader = torch.utils.data.DataLoader(
+                ds_valid,
+                batch_size=self.hypm_kwargs["test_batch_size"],
+                shuffle=True,
+                num_workers=self.metadata_kwargs["num_workers"],
+                drop_last=True,
+            )
 
         # Set random seed
         torch.manual_seed(0)

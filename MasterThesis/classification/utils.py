@@ -3,6 +3,7 @@ This module provides utilities
 """
 
 import torch
+import copy
 import numpy as np
 import pandas as pd
 from typing import List, Tuple
@@ -63,19 +64,62 @@ def generate_metadata_train_test_stratified_cv(
 
     n_total_images = metadata.shape[0]
 
-    metadata_train, metadata_test = [], []
+    metadata_train = []
+    metadata_test = []
+    metadata_valid = []
 
     kf = StratifiedKFold(n_splits=n_split, shuffle=True, random_state=42)
 
     for train, test in kf.split(metadata, metadata["Labels"].tolist()):
-        train_dataset, _ = train_test_split(
+        train_dataset, train = train_test_split(
             metadata.iloc[train], train_size=train_size, stratify=metadata.iloc[train].Labels.tolist(), random_state=42
         )
         metadata_train.append(train_dataset)
         metadata_test.append(metadata.iloc[test].copy().reset_index(drop=True))
+        metadata_valid.append(train.sample(len(test)).copy().reset_index(drop=True))
 
     print(f"Number fo total images : {n_total_images}")
     print(f"Number of images to train: {metadata_train[1].shape[0]}, {round(metadata_train[1].shape[0]/n_total_images, 5)*100}%")
     print(f"Number of images to test: {metadata_test[1].shape[0]}, {round(metadata_test[1].shape[0]/n_total_images, 5)*100}%")
+    print(f"Number of images to valid: {metadata_valid[1].shape[0]}, {round(metadata_valid[1].shape[0]/n_total_images, 5)*100}%")
 
-    return metadata_train, metadata_test
+    return metadata_train, metadata_test, metadata_valid
+
+
+class EarlyStopping:
+    """
+    Early Stopping Implementation
+
+    Arguments:
+    ----------
+        model: pytorch module
+            model to track
+        loss: float
+            loss function value
+        patient: int
+            number of epochs to wait
+    """
+
+    def __init__(self, model, loss, patient):
+
+        self.best_model = copy.deepcopy(model)
+        self.current_model = model
+        self.best_loss = loss
+        self.patient = patient
+        self._patient = 1
+        self.stop_training = False
+
+    def __call__(self, model, loss):
+
+        if self.best_loss > loss:
+            self.best_model = copy.deepcopy(model)
+            self.best_loss = loss
+            self._patient = 1
+
+        else:
+            self._patient += 1
+
+        if self._patient == self.patient:
+            self.stop_training = True
+
+        return self.stop_training
