@@ -267,3 +267,6 @@ class Classifier(nn.Module):
             wandb.log({"Precision by Threshold": metrics_by_threshold.get_bar_plot(metric="precision")})
             wandb.log({"Recall by Thresholds": metrics_by_threshold.get_bar_plot(metric="recall")})
             wandb.log({"F1_Score by Threshold": metrics_by_threshold.get_bar_plot(metric="f1_score")})  # Run a experiment
+
+            fig = plot_metrics_from_logs(logs_test, metric="F1_score")
+            fig.show()

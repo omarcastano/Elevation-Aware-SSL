@@ -226,7 +226,7 @@ class ElevationSSL(nn.Module):
                 pred_mask = pred_mask.squeeze()
                 contrastive_loss = self.loss[0](q, k)
                 regression_loss = self.loss[1](mask, pred_mask)
-                loss = contrastive_loss + regression_loss
+                loss = self.alpha * regression_loss + (1 - self.alpha) * contrastive_loss
 
                 running_loss += loss.item()
                 running_contrastive_loss += contrastive_loss.item()

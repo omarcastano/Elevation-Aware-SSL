@@ -75,7 +75,7 @@ class CustomDataset(torch.utils.data.Dataset):
 
         if self.augment:
             # Data Augmentation
-            image = data_augmentation_v2(image, augment=self.augment)
+            image = data_augmentation(image, augment=self.augment)
 
         if isinstance(image, np.ndarray):
             image = torch.from_numpy(image.astype(np.float32))

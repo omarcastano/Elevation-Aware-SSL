@@ -68,7 +68,7 @@ class CustomDataset(torch.utils.data.Dataset):
 
         # Data Augmentation
         if self.augment:
-            image, label = data_augmentation_v2(image, label, self.augment)
+            image, label = data_augmentation_segmentation(image, label, self.augment)
 
         if isinstance(image, np.ndarray):
             image = torch.from_numpy(image.astype(np.float32))
