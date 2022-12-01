@@ -65,8 +65,8 @@ class CustomDataset(torch.utils.data.Dataset):
         original_image = image.copy()
 
         # Data Augmentation
-        image_1 = data_augmentation_v2(image, augment=self.augment)
-        image_2 = data_augmentation_v2(image, augment=self.augment)
+        image_1 = data_augmentation(image, augment=self.augment)
+        image_2 = data_augmentation(image, augment=self.augment)
 
         if isinstance(image_1, np.ndarray):
 

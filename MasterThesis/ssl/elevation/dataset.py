@@ -62,7 +62,7 @@ class CustomDataset(torch.utils.data.Dataset):
         elevation = torch.from_numpy(elevation.astype(np.float32))
 
         # Data Augmentation
-        image_1 = data_augmentation_v2(image, augment=self.augment)
-        image_2 = data_augmentation_v2(image, augment=self.augment)
+        image_1 = data_augmentation(image, augment=self.augment)
+        image_2 = data_augmentation(image, augment=self.augment)
 
         return original_image, image_1, image_2, elevation
