@@ -97,14 +97,14 @@ class Trainer:
                 if (epoch % self.hypm_kwargs["eval_epoch"] == 0) | (epoch == 1):
                     last_epoch = epoch == self.hypm_kwargs["epochs"]
                     logs_test = self.model.test_one_epoch(self.test_loader, last_epoch=last_epoch)
-                    logs_valid = self.model.test_one_epoch(self.valid_loader, last_epoch=last_epoch)
 
-                    stop_training = early_stopping(self.model, logs_valid["test_total_loss"])
-
-                    if stop_training:
-                        logs_test = early_stopping.best_model.test_one_epoch(self.test_loader, last_epoch=True)
-                        self.model.log_one_epoch(logs_train, logs_test, last_epoch=True)
-                        break
+                    if self.metadata_kwargs["metadata_valid"] is not None:
+                        logs_valid = self.model.test_one_epoch(self.valid_loader, last_epoch=last_epoch)
+                        stop_training = early_stopping(self.model, logs_valid["test_total_loss"])
+                        if stop_training:
+                            logs_test = early_stopping.best_model.test_one_epoch(self.test_loader, last_epoch=True)
+                            self.model.log_one_epoch(logs_train, logs_test, last_epoch=True)
+                            break
 
                     # Save the model
                     if self.metadata_kwargs["path_to_save_model"]:
