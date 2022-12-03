@@ -8,16 +8,19 @@ from MasterThesis.ssl.elevation.model import ElevationSSL
 from MasterThesis.classification.model import Classifier
 from MasterThesis.ssl.simclr.models import SimCLR
 from MasterThesis.segmentation.model import Unet
+from MasterThesis.regression.model import Regressor
 from MasterThesis.classification.utils import EarlyStopping
 
 import wandb
 
 os.environ["WANDB_SILENT"] = "true"
+
 MODELS = {
     "ElevationSSL": ElevationSSL,
     "Classifier": Classifier,
     "SimCLR": SimCLR,
     "Unet": Unet,
+    "Regressor": Regressor,
 }
 
 
