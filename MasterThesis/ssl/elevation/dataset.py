@@ -33,11 +33,13 @@ class CustomDataset(torch.utils.data.Dataset):
         return_original=False,
         normalizing_factor: int = 6000,
         augment: dict = None,
+        augment_original: dict = None,
         **kwargs
     ):
 
         super().__init__()
         self.augment = augment
+        self.augment_origin = augment_original
         self.metadata = metadata
         self.path_to_images = path_to_images
         self.path_to_elevations = path_to_elevations
@@ -58,11 +60,13 @@ class CustomDataset(torch.utils.data.Dataset):
         elevation = elevation / 500
 
         original_image = image.copy()
-        original_image = torch.from_numpy(original_image.astype(np.float32))
-        elevation = torch.from_numpy(elevation.astype(np.float32))
+        # original_image = torch.from_numpy(original_image.astype(np.float32))
 
         # Data Augmentation
-        image_1 = data_augmentation(image, augment=self.augment)
-        image_2 = data_augmentation(image, augment=self.augment)
+        original_image, elevation = data_augmentation_v2(image, elevation, augment=self.augment_origin)
+        image_1 = data_augmentation_v2(image, augment=self.augment)
+        image_2 = data_augmentation_v2(image, augment=self.augment)
+
+        elevation = torch.from_numpy(elevation.astype(np.float32))
 
         return original_image, image_1, image_2, elevation

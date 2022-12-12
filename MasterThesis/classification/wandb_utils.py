@@ -36,6 +36,8 @@ def lineplot_metrics_from_wandb(
         "Recall",
         "Precision",
         "Acc_by_Class",
+        "test_total_loss",
+        "test_RMSE",
     ], "The parameter metric must be one of the metrics F1_score, Recall or Precision"
 
     api = wandb.Api()
@@ -76,8 +78,8 @@ def lineplot_metrics_from_wandb(
         data_frame=df,
         y="mean",
         x="train_size",
-        color="class",
-        line_dash="version",
+        color="version",
+        line_dash="class",
         markers=True,
     )
     fig.update_layout(
@@ -114,10 +116,13 @@ def barplot_metrics_from_wandb(
     """
 
     assert metric in [
+        "IoU",
         "F1_score",
         "Recall",
         "Precision",
         "Acc_by_Class",
+        "test_total_loss",
+        "test_RMSE",
     ], "The parameter metric must be one of the metrics F1_score, Recall or Precision"
 
     api = wandb.Api()
