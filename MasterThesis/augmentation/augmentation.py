@@ -100,12 +100,14 @@ def data_augmentation_v2(img, label=None, augment: dict = None):
     if label is not None:
         augmented = augmentation(image=img, mask=label)
         img, label = augmented["image"].transpose(2, 0, 1), augmented["mask"]
+        img = torch.from_numpy(img.astype(np.float32))
 
         return img, label
 
     else:
         augmented = augmentation(image=img)
         img = augmented["image"].transpose(2, 0, 1)
+        img = torch.from_numpy(img.astype(np.float32))
 
         return img
 
