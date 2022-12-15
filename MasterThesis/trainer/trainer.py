@@ -10,6 +10,7 @@ from MasterThesis.ssl.simclr.models import SimCLR
 from MasterThesis.segmentation.model import Unet
 from MasterThesis.regression.model import Regressor
 from MasterThesis.classification.utils import EarlyStopping
+from MasterThesis.ssl.glcnet.model import GLCNet
 
 import wandb
 
@@ -19,6 +20,7 @@ MODELS = {
     "ElevationSSL": ElevationSSL,
     "Classifier": Classifier,
     "SimCLR": SimCLR,
+    "GLCNet": GLCNet,
     "Unet": Unet,
     "Regressor": Regressor,
 }
