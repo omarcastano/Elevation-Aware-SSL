@@ -58,11 +58,9 @@ class CustomDataset(torch.utils.data.Dataset):
         self.augment = augment
 
     def __len__(self):
-
         return len(self.metadata)
 
     def __getitem__(self, index):
-
         # Load and transform input image
         image = EDA.read_numpy_image(self.path_to_images + self.metadata.Image.tolist()[index])
 
@@ -81,7 +79,6 @@ class CustomDataset(torch.utils.data.Dataset):
             image = torch.from_numpy(image.astype(np.float32))
 
         if self.return_original:
-
             return original_image, image, label
 
         return image, label

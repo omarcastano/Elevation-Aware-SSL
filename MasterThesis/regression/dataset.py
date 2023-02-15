@@ -5,7 +5,7 @@ import pandas as pd
 from MasterThesis import EDA
 from typing import List, Union, Tuple
 from torchvision import transforms
-from MasterThesis.augmentation import data_augmentation
+from MasterThesis.augmentation import data_augmentation, data_augmentation_v2
 
 
 class CustomDataset(torch.utils.data.Dataset):
@@ -75,7 +75,7 @@ class CustomDataset(torch.utils.data.Dataset):
 
         # Data Augmentation
         if self.augmentation:
-            image = data_augmentation(image, augment=self.augmentation)
+            image = data_augmentation_v2(image, augment=self.augmentation)
 
         if isinstance(image, np.ndarray):
             image = torch.from_numpy(image.astype(np.float32))
