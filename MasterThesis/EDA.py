@@ -23,7 +23,7 @@ def read_geotiff_image(path):
     """
 
     image = gdal.Open(path).ReadAsArray()
-    image[image == 2] = 1
+    # image[image == 2] = 1
 
     return image
 
@@ -262,7 +262,7 @@ def simple_cloud_mask_filter(image, scale_factor, clip, threshold=0.5):
         return ("Remove", image)
 
 
-def pixel_histogram_and_filtered_image(path_to_images, metadata, sample=5, scale_factor=13000, clip=None, threshold=0.5):
+def pixel_histogram_and_filtered_image(path_to_images, metadata, sample=5, scale_factor=13000, clip=None, threshold=0.5, figsize=(15, 8)):
 
     """
     This function plots the histogram and the image for the RGB bands.
@@ -284,6 +284,8 @@ def pixel_histogram_and_filtered_image(path_to_images, metadata, sample=5, scale
             value to clip pixel images
         threshold: float
             threshold to remove the image
+        figsize: Tuple
+            size  of the matplotlib figure
     """
 
     masked_images = []
@@ -309,7 +311,7 @@ def pixel_histogram_and_filtered_image(path_to_images, metadata, sample=5, scale
     print("------------------------------------")
 
     i = 1
-    fig, ax = plt.subplots(2, sample, figsize=(60, 10))
+    fig, ax = plt.subplots(2, sample, figsize=figsize)
     images = images[:, 0:3, :, :] / scale_factor
 
     for i, img in enumerate(images[0:sample]):
@@ -319,12 +321,18 @@ def pixel_histogram_and_filtered_image(path_to_images, metadata, sample=5, scale
         else:
             ax[0, i].set_title(f"{labels[i]}", fontsize=20)
 
+        ax[0, i].axis("off")
+
         sns.histplot(x=img.ravel(), ax=ax[1, i])
         ax[1, i].set_xlabel("Pixel Value")
         ax[1, i].legend(
             [f"Mean={img.mean().round(3)} \n Min={img.min().round(3)}, \n Max={img.max().round(3)}"],
             fontsize=10,
         )
+        ax[1, i].ticklabel_format(style="sci", scilimits=(0, 0), axis="y")
+
+    fig.tight_layout()
+    fig.show()
 
 
 # helper function for data visualization#
@@ -332,12 +340,13 @@ def visualize_images_and_masks(
     path_to_label: str,
     path_to_images: str,
     metadata: pd.DataFrame,
-    class_names=List,
+    class_names: List,
     area: Tuple = None,
-    temporal_dim: bool = True,
     n: int = 5,
     figsize: Tuple = (10, 5),
-    brightness=0.0,
+    brightness: float = 0.0,
+    cmap: dict = None,
+    scaling: int = 2000,
 ):
 
     """
@@ -356,76 +365,53 @@ def visualize_images_and_masks(
             name of the classes
         area: Tuple, default=None
             columns to get the area covered by the classes
-        temporal_dim: bool. default True
-            wether images have temporal dimension or not.
-            if images have temporal dimension, the must have the
-            shape (T,C,W,H)
         n: int
             number of images to plot
         figsize: tuple
             matplotlib figure size
         brightness: float, default=0
             factor to add brightness to plotted images
+        scaling: int
+            factor to clip and normalize RGB images
     """
 
-    t = 1  ## alpha value
-    cmap = {i: [np.random.random(), np.random.random(), np.random.random(), 1] for i in range(len(class_names))}
+    if cmap is None:
+        cmap = {i: [np.random.random(), np.random.random(), np.random.random(), 1] for i in range(len(class_names))}
+
     labels_map = {i: name for i, name in enumerate(class_names)}
 
     patches = [mpatches.Patch(color=cmap[i], label=labels_map[i]) for i in cmap]
 
     fig, ax = plt.subplots(2, n, figsize=figsize)
 
-    seed = np.random.randint(low=0, high=100)
+    for i in range(n):
+        img = read_numpy_image(path_to_images + metadata["Image"].values[i])
+        label = read_geotiff_image(path_to_label + metadata["Mask"].values[i])
+        ax[0, i].imshow(np.clip(img[0:3].transpose(1, 2, 0), 0, scaling) / scaling + brightness)
+        ax[1, i].imshow(label)
 
-    if temporal_dim:
-        for i in range(n):
-            img = read_numpy_image(path_to_images + metadata["Image"].sample(n, random_state=seed).values[i])
-            label = read_geotiff_image(path_to_label + metadata["Mask"].sample(n, random_state=seed).values[i])
-            ax[0, i].imshow(np.clip(img[0][[0, 1, 2]].transpose(1, 2, 0), 0, 6000) / 6000 + brightness)
-            ax[1, i].imshow(label)
-            arrayShow = np.array([[cmap[i] for i in j] for j in label])
-            ax[1, i].imshow(arrayShow)
-            plt.legend(
-                handles=patches,
-                bbox_to_anchor=(1.05, 1),
-                loc=2,
-                borderaxespad=0.0,
-                markerscale=30,
-                fontsize="large",
-            )
+        arrayShow = np.array([[cmap[i] for i in j] for j in label])
+        ax[1, i].imshow(arrayShow)
+        plt.legend(
+            handles=patches,
+            bbox_to_anchor=(1.05, 1),
+            loc=2,
+            borderaxespad=0.0,
+            markerscale=30,
+            fontsize="xx-large",
+        )
 
-    else:
-        for i in range(n):
-            img = read_numpy_image(path_to_images + metadata["Image"].values[i])
-            label = read_geotiff_image(path_to_label + metadata["Mask"].values[i])
-            ax[0, i].imshow(np.clip(img[0:3].transpose(1, 2, 0), 0, 6000) / 6000 + brightness)
-            ax[1, i].imshow(label)
+        ax[0, i].axis("off")
+        ax[1, i].axis("off")
 
-            label[label == 2] = 1
+        if area:
+            title = metadata[area].iloc[i].to_dict()
 
-            arrayShow = np.array([[cmap[i] for i in j] for j in label])
-            ax[1, i].imshow(arrayShow)
-            plt.legend(
-                handles=patches,
-                bbox_to_anchor=(1.05, 1),
-                loc=2,
-                borderaxespad=0.0,
-                markerscale=30,
-                fontsize="xx-large",
-            )
+            s = ""
+            for i_, j_ in title.items():
+                s += i_ + ":" + str(j_) + " \n"
 
-            ax[0, i].axis("off")
-            ax[1, i].axis("off")
-
-            if area:
-                title = metadata[area].iloc[i].to_dict()
-
-                s = ""
-                for i_, j_ in title.items():
-                    s += i_ + ":" + str(j_) + " \n"
-
-                ax[1, i].set_title(s)
+            ax[1, i].set_title(s)
 
     return fig
 

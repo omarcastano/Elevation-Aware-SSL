@@ -11,6 +11,7 @@ def lineplot_metrics_from_wandb(
     version=["baseline"],
     train_size=[0.02],
     metric="F1_score",
+    replace: dict = None,
 ):
 
     """
@@ -73,6 +74,9 @@ def lineplot_metrics_from_wandb(
         }
     )
 
+    if replace:
+        df.replace(replace, inplace=True)
+
     df = df.groupby(["version", "class", "train_size"], as_index=False).agg(mean=("metrics", "mean"), std=("metrics", "std"))
     fig = px.line(
         data_frame=df,
@@ -88,7 +92,7 @@ def lineplot_metrics_from_wandb(
         font={"size": 15},
     )
 
-    return fig
+    return df, fig
 
 
 def barplot_metrics_from_wandb(
