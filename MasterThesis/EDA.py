@@ -11,6 +11,8 @@ import earthpy.plot as ep
 from tqdm import tqdm
 import multiprocessing as mp
 from typing import List, Tuple
+from PIL import Image
+
 
 # Function that reads geotiff
 def read_geotiff_image(path):
@@ -18,11 +20,14 @@ def read_geotiff_image(path):
     Read geotiff
 
     Arguments:
+
         path: string
             path to image
     """
 
-    image = gdal.Open(path).ReadAsArray()
+    image = Image.open(path)
+    image = np.array(image).astype(np.float32)
+
     # image[image == 2] = 1
 
     return image
@@ -39,7 +44,6 @@ def read_numpy_image(path):
     """
 
     if path[-3:] == "npz":
-
         image = np.load(path)
         return image["arr_0"]
 
@@ -48,7 +52,6 @@ def read_numpy_image(path):
 
 
 def load_image_and_labels(img_path, label_path):
-
     """
     Load Image and label given the path
 
@@ -62,7 +65,6 @@ def load_image_and_labels(img_path, label_path):
 
 
 def image_label_sanity_check(metadata, path_to_images, path_to_labels):
-
     """
     load all images and labels to verify that they exist in the folder
 
@@ -82,7 +84,6 @@ def image_label_sanity_check(metadata, path_to_images, path_to_labels):
 
 # Function that plots all bands of a image
 def visualize_image_bands(path_to_images: str, metadata: pd.DataFrame):
-
     """
     Visualize all bands of a given image. The image is expected
     to be in .npz format.
@@ -110,7 +111,6 @@ def visualize_image_bands(path_to_images: str, metadata: pd.DataFrame):
 
 # This function plot pixel histogram for each band
 def pixel_histogram(path_to_images, metadata, sample=20, clip=None):
-
     """
     This function plots histogram and basic statistics for each band.
     This function assums that images are stored in .npz format
@@ -155,7 +155,6 @@ def pixel_histogram(path_to_images, metadata, sample=20, clip=None):
 
 # Select the less cloudy image from the time series
 def less_cloudy_image(images):
-
     """
     This function select the less cloudy image from the time series
 
@@ -174,7 +173,6 @@ def less_cloudy_image(images):
 
 # Plot less cloudy image from the time seires
 def pixel_histogram_with_image(path_to_images, metadata, sample=5, scale_factor=13000, cloud_mask=False, clip=None):
-
     """
     This function plots the histogram and the image for the RGB bands. You
     can choose if select the less cloudy image from the time series or
@@ -227,7 +225,6 @@ def pixel_histogram_with_image(path_to_images, metadata, sample=5, scale_factor=
         images = images[:, 0:3, :, :]
 
     for i, img in enumerate(images):
-
         ax[0, i].imshow(img.transpose(1, 2, 0))
         sns.histplot(x=img.ravel(), ax=ax[1, i])
         ax[1, i].set_xlabel("Pixel Value")
@@ -238,7 +235,6 @@ def pixel_histogram_with_image(path_to_images, metadata, sample=5, scale_factor=
 
 
 def simple_cloud_mask_filter(image, scale_factor, clip, threshold=0.5):
-
     """
     This function filter images based on a given threshold
 
@@ -263,7 +259,6 @@ def simple_cloud_mask_filter(image, scale_factor, clip, threshold=0.5):
 
 
 def pixel_histogram_and_filtered_image(path_to_images, metadata, sample=5, scale_factor=13000, clip=None, threshold=0.5, figsize=(15, 8)):
-
     """
     This function plots the histogram and the image for the RGB bands.
     It also shows a label suggesting if an image from the time series
@@ -348,7 +343,6 @@ def visualize_images_and_masks(
     cmap: dict = None,
     scaling: int = 2000,
 ):
-
     """
     Plots RGB images and labels. If images come with extra temporal
     information, they must have the shape (T,C,W,H), otherwise
@@ -426,7 +420,6 @@ def visualize_images_and_labels(
     scale_factor: int = 6000,
     figsize: Tuple = (10, 5),
 ):
-
     """
     Plots RGB images and labels. If images come with extra temporal
     information, they must have the sahpe (T,C,W,H), otherwise
@@ -461,7 +454,6 @@ def visualize_images_and_labels(
 
     if temporal_dim:
         for i in range(n):
-
             img = read_numpy_image(path_to_images + images[i])
             ax[i].imshow(img[0][rgb_bands].transpose(1, 2, 0))
             ax[i].axis("off")
@@ -469,7 +461,6 @@ def visualize_images_and_labels(
 
     else:
         for i in range(n):
-
             img = read_numpy_image(path_to_images + images[i])
             ax[i].imshow(np.clip(img[rgb_bands].transpose(1, 2, 0), 0, scale_factor) / scale_factor)
             ax[i].axis("off")
@@ -477,7 +468,6 @@ def visualize_images_and_labels(
 
 
 def label_pixel_distributio(path_to_label: str, metadata: pd.DataFrame, select_classes: list):
-
     """
     Plots label distribution
 

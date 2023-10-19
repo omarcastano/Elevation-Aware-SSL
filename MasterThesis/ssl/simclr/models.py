@@ -36,7 +36,6 @@ class SimCLR(nn.Module):
     def __init__(
         self, backbone: str = "resnet50", proj_hidden_dim: int = 512, proj_output_dim: int = 128, cifar: bool = False, **kwargs
     ) -> None:
-
         super(SimCLR, self).__init__()
 
         self.backbone = BACKBONES[backbone](cifar=cifar)
@@ -53,7 +52,6 @@ class SimCLR(nn.Module):
         self._init_weight()
 
     def forward(self, x):
-
         x = self.backbone(x)
         x = self.projector(x)
 
@@ -115,7 +113,6 @@ class SimCLR(nn.Module):
         self.train()
         bar = tqdm(train_loader, leave=True, position=1)
         for epoch, (input1, input2) in enumerate(bar, 1):
-
             # Set zero gradients for every batch
             self.optimizer.zero_grad()
 
@@ -164,7 +161,6 @@ class SimCLR(nn.Module):
 
         with torch.no_grad():
             for epoch, (input1, input2) in enumerate(bar, 1):
-
                 input1, input2 = input1.to(self.device), input2.to(self.device)
 
                 # Get the keys and Queries

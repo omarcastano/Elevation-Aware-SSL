@@ -52,7 +52,6 @@ class ElevationSSL(nn.Module):
         output_size: int = 33,
         **kwargs,
     ) -> None:
-
         super().__init__()
 
         self.unet = Unet(backbone, decoder_channels=decoder_channels, input_size=input_size, output_size=output_size)
@@ -67,7 +66,6 @@ class ElevationSSL(nn.Module):
         )
 
     def forward(self, x, x_i, x_j):
-
         x_i = self.backbone(x_i)
         x_j = self.backbone(x_j)
 
@@ -141,7 +139,6 @@ class ElevationSSL(nn.Module):
         self.train()
         bar = tqdm(train_loader, leave=True, position=1)
         for epoch, (input1, input2, input3, mask) in enumerate(bar, 1):
-
             # Set zero gradients for every batch
             self.optimizer.zero_grad()
 
@@ -211,7 +208,6 @@ class ElevationSSL(nn.Module):
 
         with torch.no_grad():
             for epoch, (input1, input2, input3, mask) in enumerate(bar, 1):
-
                 # Input image and elevation map
                 input1 = input1.to(self.device)
                 mask = mask.to(self.device)

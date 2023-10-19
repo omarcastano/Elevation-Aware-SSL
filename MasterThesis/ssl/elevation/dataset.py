@@ -36,7 +36,6 @@ class CustomDataset(torch.utils.data.Dataset):
         augment_original: dict = None,
         **kwargs
     ):
-
         super().__init__()
         self.augment = augment
         self.augment_origin = augment_original
@@ -47,11 +46,9 @@ class CustomDataset(torch.utils.data.Dataset):
         self.normalizing_factor = normalizing_factor
 
     def __len__(self):
-
         return len(self.metadata)
 
     def __getitem__(self, index):
-
         # Load and transform input image
         image = EDA.read_numpy_image(self.path_to_images + self.metadata.Image.tolist()[index])
         elevation = EDA.read_geotiff_image(self.path_to_elevations + self.metadata.Elevation.tolist()[index])

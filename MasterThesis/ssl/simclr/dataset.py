@@ -11,6 +11,7 @@ class CustomDataset(torch.utils.data.Dataset):
     SimCLR self-supervised learning methodology
 
     Arguments:
+    ----------
         path_to_images: str
             path to the folder where images are stored
         path_to_labels: str
@@ -40,7 +41,6 @@ class CustomDataset(torch.utils.data.Dataset):
     """
 
     def __init__(self, path_to_images, metadata, return_original=False, normalizing_factor: int = 6000, augment: dict = None, **kwargs):
-
         super().__init__()
         self.augment = augment
         self.metadata = metadata
@@ -49,11 +49,9 @@ class CustomDataset(torch.utils.data.Dataset):
         self.normalizing_factor = normalizing_factor
 
     def __len__(self):
-
         return len(self.metadata)
 
     def __getitem__(self, index):
-
         # Load and transform input image
         image = EDA.read_numpy_image(self.path_to_images + self.metadata.Image.tolist()[index])
 
@@ -69,7 +67,6 @@ class CustomDataset(torch.utils.data.Dataset):
         image_2 = data_augmentation(image, augment=self.augment)
 
         if isinstance(image_1, np.ndarray):
-
             image_1 = torch.from_numpy(image_1.astype(np.float32))
             image_2 = torch.from_numpy(image_2.astype(np.float32))
 

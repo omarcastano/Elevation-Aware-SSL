@@ -19,6 +19,7 @@ AUGMENTATIONS = {
     "gray_scale_prob": 0.2,
 }
 
+
 # Data Augmentation
 def data_augmentation(img, augment: dict = None):
     """
@@ -75,7 +76,6 @@ AUGMENTATIONS_V2 = {
 
 
 def data_augmentation_v2(img, label=None, augment: dict = None):
-
     augment = augment or AUGMENTATIONS_V2
 
     # Defines transformation

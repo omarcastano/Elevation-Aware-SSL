@@ -54,7 +54,6 @@ class Trainer:
         hypm_kwargs: dict,
         metadata_kwargs: dict,
     ) -> None:
-
         self.custom_dataloader = custom_dataloader
         self.wandb_kwargs = wandb_kwargs
         self.hypm_kwargs = hypm_kwargs
@@ -88,13 +87,11 @@ class Trainer:
         # Initialize WandB
         self.wandb_kwargs.update({"config": self.hypm_kwargs})
         with wandb.init(**self.wandb_kwargs):
-
             # Start Training the model
             bar = tqdm(
                 range(self.epoch, self.hypm_kwargs["epochs"] + 1), desc=f"Epoch {self.epoch}/{self.hypm_kwargs['epochs']} ", position=0
             )
             for epoch in bar:
-
                 # Train the model for one epoch
                 logs_train = self.model.train_one_epoch(self.train_loader)
 
@@ -135,7 +132,6 @@ class Trainer:
                 )
 
                 if self.hypm_kwargs["fine_tune"] and (self.hypm_kwargs["ft_epoch"] == epoch):
-
                     for parameters in self.model.backbone.parameters():
                         parameters.requires_grad = True
 
@@ -143,7 +139,6 @@ class Trainer:
                         g["lr"] = self.hypm_kwargs["ft_lr"]
 
     def configure_trainer(self):
-
         # Define train dataset
         ds_train = self.custom_dataloader(
             metadata=self.metadata_kwargs["metadata_train"],
