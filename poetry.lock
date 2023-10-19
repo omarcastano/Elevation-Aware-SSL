@@ -155,14 +155,14 @@ frozenlist = ">=1.1.0"
 
 [[package]]
 name = "albumentations"
-version = "1.3.1"
+version = "1.3.0"
 description = "Fast image augmentation library and easy to use wrapper around other libraries"
 category = "main"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.6"
 files = [
-    {file = "albumentations-1.3.1-py3-none-any.whl", hash = "sha256:6b641d13733181d9ecdc29550e6ad580d1bfa9d25e2213a66940062f25e291bd"},
-    {file = "albumentations-1.3.1.tar.gz", hash = "sha256:a6a38388fe546c568071e8c82f414498e86c9ed03c08b58e7a88b31cf7a244c6"},
+    {file = "albumentations-1.3.0-py3-none-any.whl", hash = "sha256:294165d87d03bc8323e484927f0a5c1a3c64b0e7b9c32a979582a6c93c363bdf"},
+    {file = "albumentations-1.3.0.tar.gz", hash = "sha256:be1af36832c8893314f2a5550e8ac19801e04770734c1b70fa3c996b41f37bed"},
 ]
 
 [package.dependencies]
@@ -171,7 +171,7 @@ opencv-python-headless = ">=4.1.1"
 PyYAML = "*"
 qudida = ">=0.0.4"
 scikit-image = ">=0.16.1"
-scipy = ">=1.1.0"
+scipy = "*"
 
 [package.extras]
 develop = ["imgaug (>=0.4.0)", "pytest"]
@@ -767,6 +767,9 @@ python-versions = ">=3.6.0"
 files = [
     {file = "GDAL-3.3.3.tar.gz", hash = "sha256:3dc9cc43d046e35907824808361f5b8140e5613d8f13d21aeaa8a53afbf4fa4f"},
 ]
+
+[package.dependencies]
+numpy = {version = ">1.0.0", optional = true, markers = "extra == \"numpy\""}
 
 [package.extras]
 numpy = ["numpy (>1.0.0)"]
@@ -2760,4 +2763,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1, <3.10.0"
-content-hash = "18f7be28969d45fe85f41bfffb5703fd7e662fd5222b9d62242814dcbb8d4c04"
+content-hash = "1784992a1569a8217da090328baad63648569ab802976916c26836a3c96966e8"
