@@ -2,15 +2,14 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import pyproj
 import pandas as pd
-import h5py
 import os
 import numpy as np
 from shapely.geometry import Point, Polygon
-import folium
 from MasterThesis import EDA
 from osgeo import osr, gdal, ogr
 from shapely.ops import unary_union
 from tqdm.autonotebook import tqdm
+
 
 # Function that reads geotiff
 def read_geotiff_image(path: str):
@@ -33,7 +32,6 @@ def create_shapefiel_from_polygons(
     path_to_save: str = None,
     crs: str = "epsg:4326",
 ):
-
     """
     Function that allow you to create a shapefile from chip corners cordinates.
     Args:
@@ -85,7 +83,6 @@ def polygons_intersection(
     path_to_save=None,
     crs=None,
 ):
-
     """
     Function that computes the intersection between polygons stored in shapefile.
 
@@ -159,7 +156,6 @@ def polygons_intersection(
 
 
 def from_array_to_geotiff(path_to_save, array, path_to_chip_metadata, crs=3116):
-
     """
     Function that creates a GeoTiff from a numpy array and chip corners cordinates
 
@@ -204,7 +200,6 @@ def from_array_to_geotiff(path_to_save, array, path_to_chip_metadata, crs=3116):
 
 
 def shapefiel_to_geotiff(path_input_shp, path_output_raster, pixel_size, attribute, no_data_value=-999):
-
     """
     This function allow you to convert a shapefile into a Geotiff. In order to use this function
     shapefile projection must be in Cartesian system in meters. In order for this module to work properly
@@ -270,7 +265,6 @@ def crop_geotiff_chip(
     crs=3116,
     no_data_value=999,
 ):
-
     """
 
 
@@ -333,7 +327,6 @@ def crop_geotiff_chip(
 
 
 def remove_corruped_labels(path_to_label: str, metadata: pd.DataFrame):
-
     """
     Remove corrupted label, that is, labels which values are
     out of the set {0,1,2}
