@@ -28,7 +28,7 @@ def read_geotiff_image(path):
     image = Image.open(path)
     image = np.array(image).astype(np.float32)
 
-    # image[image == 2] = 1
+    image[image == 2] = 1
 
     return image
 
