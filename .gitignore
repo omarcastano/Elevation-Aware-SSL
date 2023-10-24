@@ -3,3 +3,8 @@
 *.pth
 *.pt
 *.zip
+*.csv
+*.npz
+*.pkl
+*.tif
+**/.ipynb_checkpoints
