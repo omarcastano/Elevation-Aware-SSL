@@ -1,5 +1,5 @@
-from MasterThesis.EDA import read_geotiff_image, read_numpy_image, less_cloudy_image
-from MasterThesis.preprocessing import from_array_to_geotiff
+from elevation_aware_ssl.EDA import read_geotiff_image, read_numpy_image, less_cloudy_image
+from elevation_aware_ssl.preprocessing import from_array_to_geotiff
 import matplotlib.pyplot as plt
 import pandas as pd
 from IPython.display import clear_output
@@ -10,7 +10,7 @@ import elevation
 import re
 import shutil
 from tqdm import tqdm
-from MasterThesis import EDA
+from elevation_aware_ssl import EDA
 import multiprocessing as mp
 from contextlib import contextmanager
 import sys, os

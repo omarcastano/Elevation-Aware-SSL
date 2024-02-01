@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "MasterThesis"
+name = "elevation_aware_ssl"
 version = "0.1.0"
 description = ""
 authors = ["omarcastano <omar.castano@udea.edu.co>"]
 packages = [
-    { include = "MasterThesis"}
+    { include = "elevation_aware_ssl"}
 ]
 
 [tool.poetry.dependencies]
